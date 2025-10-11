@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nextcloud-redis-configuration
+  namespace: nextcloud
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/instance: nextcloud
+data:
+  redis.conf: '# User-supplied Redis configuration:
+
+    # Enable AOF https://redis.io/topics/persistence#append-only-file
+
+    appendonly yes
+
+    # Disable RDB persistence, AOF persistence already enabled.
+
+    save ""
+
+    '

@@ -1,0 +1,20 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nextcloud-redis-scripts
+  namespace: nextcloud
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/instance: nextcloud
+data:
+  start-master.sh: '#!/bin/bash
+
+    exec redis-server /opt/bitnami/redis/mounted-etc/redis.conf
+
+    '
+  start-replica.sh: '#!/bin/bash
+
+    exec redis-server /opt/bitnami/redis/mounted-etc/replica.conf --replicaof nextcloud-redis-master
+    6379
+
+    '

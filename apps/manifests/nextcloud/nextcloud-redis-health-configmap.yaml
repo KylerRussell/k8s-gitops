@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: nextcloud-redis-health
+  namespace: nextcloud
+  labels:
+    app.kubernetes.io/name: redis
+    app.kubernetes.io/instance: nextcloud
+data:
+  ping_liveness_local.sh: "#!/bin/bash\nresponse=$(redis-cli -h localhost -p 6379\
+    \ ping)\nif [ \"$response\" != \"PONG\" ]; then\n  exit 1\nfi\n"
+  ping_readiness_local.sh: "#!/bin/bash\nresponse=$(redis-cli -h localhost -p 6379\
+    \ ping)\nif [ \"$response\" != \"PONG\" ]; then\n  exit 1\nfi\n"

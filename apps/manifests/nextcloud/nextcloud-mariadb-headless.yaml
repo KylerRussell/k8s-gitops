@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/version: 11.4.6
     helm.sh/chart: mariadb-20.5.5
   name: nextcloud-mariadb-headless
-  namespace: local-cloud
+  namespace: nextcloud
 spec:
   internalTrafficPolicy: Cluster
   ipFamilies:

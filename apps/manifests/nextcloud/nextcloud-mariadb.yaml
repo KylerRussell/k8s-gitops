@@ -13,7 +13,7 @@ metadata:
     app.kubernetes.io/version: 11.4.6
     helm.sh/chart: mariadb-20.5.5
   name: nextcloud-mariadb
-  namespace: local-cloud
+  namespace: nextcloud
 spec:
   persistentVolumeClaimRetentionPolicy:
     whenDeleted: Retain
