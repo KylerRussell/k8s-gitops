@@ -3,4 +3,3 @@ kind: Kustomization
 namespace: homarr
 resources:
 - homarr.yaml
-- homarr.yaml

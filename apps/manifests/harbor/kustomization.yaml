@@ -3,16 +3,9 @@ kind: Kustomization
 namespace: harbor
 resources:
 - harbor-core.yaml
-- harbor-core.yaml
-- harbor-database.yaml
 - harbor-database.yaml
 - harbor-jobservice.yaml
-- harbor-jobservice.yaml
-- harbor-portal.yaml
 - harbor-portal.yaml
 - harbor-redis.yaml
-- harbor-redis.yaml
 - harbor-registry.yaml
-- harbor-registry.yaml
-- harbor-trivy.yaml
 - harbor-trivy.yaml

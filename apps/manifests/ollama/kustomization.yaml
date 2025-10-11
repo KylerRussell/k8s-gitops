@@ -3,8 +3,6 @@ kind: Kustomization
 namespace: ollama
 resources:
 - open-webui-ollama.yaml
-- open-webui-ollama.yaml
 - open-webui-pipelines.yaml
-- open-webui-pipelines.yaml
-- open-webui.yaml
+- open-webui-serviceaccount.yaml
 - open-webui.yaml

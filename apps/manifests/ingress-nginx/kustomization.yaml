@@ -4,4 +4,3 @@ namespace: ingress-nginx
 resources:
 - ingress-nginx-controller-admission.yaml
 - ingress-nginx-controller.yaml
-- ingress-nginx-controller.yaml
