@@ -15,3 +15,11 @@ data:
     dir /data
     # Disable RDB persistence, AOF persistence already enabled.
     save ""
+    # Disable protected mode since we're using password auth
+    protected-mode no
+  replica.conf: |
+    # Replica configuration
+    appendonly yes
+    dir /data
+    save ""
+    protected-mode no

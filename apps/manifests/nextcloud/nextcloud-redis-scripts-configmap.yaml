@@ -7,14 +7,14 @@ metadata:
     app.kubernetes.io/name: redis
     app.kubernetes.io/instance: nextcloud
 data:
-  start-master.sh: '#!/bin/bash
-
+  start-master.sh: |
+    #!/bin/bash
     exec redis-server /opt/bitnami/redis/mounted-etc/redis.conf
-
-    '
-  start-replica.sh: '#!/bin/bash
-
-    exec redis-server /opt/bitnami/redis/mounted-etc/replica.conf --replicaof nextcloud-redis-master
-    6379
-
-    '
+  start-replica.sh: |
+    #!/bin/bash
+    # Read password from secret file
+    REDIS_PASSWORD=$(cat /opt/bitnami/redis/secrets/redis-password)
+    exec redis-server /opt/bitnami/redis/mounted-etc/replica.conf \
+      --replicaof nextcloud-redis-master 6379 \
+      --masterauth "$REDIS_PASSWORD" \
+      --requirepass "$REDIS_PASSWORD"
