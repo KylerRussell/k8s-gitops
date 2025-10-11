@@ -4,7 +4,6 @@ namespace: local-cloud
 resources:
 - nextcloud-mariadb-configmap.yaml
 - nextcloud-mariadb-headless.yaml
-- nextcloud-mariadb-secret.yaml
 - nextcloud-mariadb-serviceaccount.yaml
 - nextcloud-mariadb.yaml
 - nextcloud-redis-configuration-configmap.yaml
@@ -15,5 +14,4 @@ resources:
 - nextcloud-redis-replica-serviceaccount.yaml
 - nextcloud-redis-replicas.yaml
 - nextcloud-redis-scripts-configmap.yaml
-- nextcloud-redis-secret.yaml
 - nextcloud.yaml
