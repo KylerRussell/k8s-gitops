@@ -27,3 +27,12 @@ spec:
         duration: 5s
         factor: 2
         maxDuration: 3m
+  ignoreDifferences:
+  - group: apps
+    kind: StatefulSet
+    jsonPointers:
+    - /metadata/annotations/argocd.argoproj.io~1tracking-id
+  - group: apps
+    kind: Deployment
+    jsonPointers:
+    - /metadata/annotations/argocd.argoproj.io~1tracking-id
