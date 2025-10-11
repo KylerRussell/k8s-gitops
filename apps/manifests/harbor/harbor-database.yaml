@@ -1,0 +1,156 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  annotations:
+    meta.helm.sh/release-name: harbor
+    meta.helm.sh/release-namespace: harbor
+  labels:
+    app: harbor
+    app.kubernetes.io/component: database
+    app.kubernetes.io/instance: harbor
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: harbor
+    app.kubernetes.io/part-of: harbor
+    app.kubernetes.io/version: 2.14.0
+    chart: harbor
+    component: database
+    heritage: Helm
+    release: harbor
+  name: harbor-database
+  namespace: harbor
+spec:
+  persistentVolumeClaimRetentionPolicy:
+    whenDeleted: Retain
+    whenScaled: Retain
+  podManagementPolicy: OrderedReady
+  replicas: 1
+  selector:
+    matchLabels:
+      app: harbor
+      component: database
+      release: harbor
+  serviceName: harbor-database
+  template:
+    metadata:
+      annotations:
+        checksum/secret: fda5ea441dd99451e1f03f09034777d1fe43d30f80f55c55dc6f507103c984f7
+      labels:
+        app: harbor
+        app.kubernetes.io/component: database
+        app.kubernetes.io/instance: harbor
+        app.kubernetes.io/managed-by: Helm
+        app.kubernetes.io/name: harbor
+        app.kubernetes.io/part-of: harbor
+        app.kubernetes.io/version: 2.14.0
+        chart: harbor
+        component: database
+        heritage: Helm
+        release: harbor
+    spec:
+      automountServiceAccountToken: false
+      containers:
+      - env:
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        envFrom:
+        - secretRef:
+            name: harbor-database
+        image: goharbor/harbor-db:v2.14.0
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          exec:
+            command:
+            - /docker-healthcheck.sh
+          failureThreshold: 3
+          initialDelaySeconds: 300
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: database
+        readinessProbe:
+          exec:
+            command:
+            - /docker-healthcheck.sh
+          failureThreshold: 3
+          initialDelaySeconds: 1
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: database-data
+        - mountPath: /dev/shm
+          name: shm-volume
+      dnsPolicy: ClusterFirst
+      initContainers:
+      - args:
+        - -c
+        - chmod -R 700 /var/lib/postgresql/data/pgdata || true
+        command:
+        - /bin/sh
+        image: goharbor/harbor-db:v2.14.0
+        imagePullPolicy: IfNotPresent
+        name: data-permissions-ensurer
+        resources: {}
+        securityContext:
+          allowPrivilegeEscalation: false
+          capabilities:
+            drop:
+            - ALL
+          privileged: false
+          runAsNonRoot: true
+          seccompProfile:
+            type: RuntimeDefault
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /var/lib/postgresql/data
+          name: database-data
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext:
+        fsGroup: 999
+        runAsUser: 999
+      terminationGracePeriodSeconds: 120
+      volumes:
+      - emptyDir:
+          medium: Memory
+          sizeLimit: 512Mi
+        name: shm-volume
+  updateStrategy:
+    rollingUpdate:
+      partition: 0
+    type: RollingUpdate
+  volumeClaimTemplates:
+  - apiVersion: v1
+    kind: PersistentVolumeClaim
+    metadata:
+      creationTimestamp: null
+      labels:
+        app: harbor
+        chart: harbor
+        heritage: Helm
+        release: harbor
+      name: database-data
+    spec:
+      accessModes:
+      - ReadWriteOnce
+      resources:
+        requests:
+          storage: 1Gi
+      storageClassName: local-path
+      volumeMode: Filesystem
+    status:
+      phase: Pending

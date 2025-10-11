@@ -1,0 +1,10 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: ollama
+resources:
+- open-webui-ollama.yaml
+- open-webui-ollama.yaml
+- open-webui-pipelines.yaml
+- open-webui-pipelines.yaml
+- open-webui.yaml
+- open-webui.yaml

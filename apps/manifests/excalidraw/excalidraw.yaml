@@ -1,0 +1,68 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  annotations:
+    meta.helm.sh/release-name: excalidraw
+    meta.helm.sh/release-namespace: local-cloud
+  labels:
+    app.kubernetes.io/instance: excalidraw
+    app.kubernetes.io/managed-by: Helm
+    app.kubernetes.io/name: excalidraw
+    app.kubernetes.io/version: v0.15.0
+    helm.sh/chart: excalidraw-0.1.1
+  name: excalidraw
+  namespace: local-cloud
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app.kubernetes.io/instance: excalidraw
+      app.kubernetes.io/name: excalidraw
+  strategy:
+    rollingUpdate:
+      maxSurge: 25%
+      maxUnavailable: 25%
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/instance: excalidraw
+        app.kubernetes.io/name: excalidraw
+    spec:
+      containers:
+      - image: excalidraw/excalidraw:latest
+        imagePullPolicy: IfNotPresent
+        livenessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: http
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        name: excalidraw
+        ports:
+        - containerPort: 80
+          name: http
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /
+            port: http
+            scheme: HTTP
+          periodSeconds: 10
+          successThreshold: 1
+          timeoutSeconds: 1
+        resources: {}
+        securityContext: {}
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+      dnsPolicy: ClusterFirst
+      restartPolicy: Always
+      schedulerName: default-scheduler
+      securityContext: {}
+      serviceAccount: excalidraw
+      serviceAccountName: excalidraw
+      terminationGracePeriodSeconds: 30

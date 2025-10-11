@@ -1,0 +1,14 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: nextcloud
+resources:
+- nextcloud-mariadb-headless.yaml
+- nextcloud-mariadb.yaml
+- nextcloud-mariadb.yaml
+- nextcloud-redis-headless.yaml
+- nextcloud-redis-master.yaml
+- nextcloud-redis-master.yaml
+- nextcloud-redis-replicas.yaml
+- nextcloud-redis-replicas.yaml
+- nextcloud.yaml
+- nextcloud.yaml
