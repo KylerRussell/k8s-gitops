@@ -9,11 +9,17 @@ metadata:
 data:
   start-master.sh: |
     #!/bin/bash
-    exec redis-server /opt/bitnami/redis/mounted-etc/redis.conf
+    # Read password from secret file
+    REDIS_PASSWORD=$(cat /opt/bitnami/redis/secrets/redis-password)
+    
+    # Start Redis with password
+    exec redis-server /opt/bitnami/redis/mounted-etc/redis.conf \
+      --requirepass "$REDIS_PASSWORD"
   start-replica.sh: |
     #!/bin/bash
     # Read password from secret file
     REDIS_PASSWORD=$(cat /opt/bitnami/redis/secrets/redis-password)
+    
     exec redis-server /opt/bitnami/redis/mounted-etc/replica.conf \
       --replicaof nextcloud-redis-master 6379 \
       --masterauth "$REDIS_PASSWORD" \
