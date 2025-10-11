@@ -13,7 +13,7 @@ spec:
     path: apps/manifests/excalidraw
   destination:
     server: https://kubernetes.default.svc
-    namespace: excalidraw
+    namespace: local-cloud
   syncPolicy:
     automated:
       prune: true

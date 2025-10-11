@@ -12,7 +12,7 @@ metadata:
     app.kubernetes.io/version: 8.0.1
     helm.sh/chart: redis-21.1.3
   name: nextcloud-redis-replicas
-  namespace: nextcloud
+  namespace: local-cloud
 spec:
   persistentVolumeClaimRetentionPolicy:
     whenDeleted: Retain
