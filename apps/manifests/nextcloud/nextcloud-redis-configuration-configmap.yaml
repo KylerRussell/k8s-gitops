@@ -7,14 +7,11 @@ metadata:
     app.kubernetes.io/name: redis
     app.kubernetes.io/instance: nextcloud
 data:
-  redis.conf: '# User-supplied Redis configuration:
-
+  redis.conf: |
+    # User-supplied Redis configuration:
     # Enable AOF https://redis.io/topics/persistence#append-only-file
-
     appendonly yes
-
+    # Set AOF directory to /data (which is writable)
+    dir /data
     # Disable RDB persistence, AOF persistence already enabled.
-
     save ""
-
-    '
