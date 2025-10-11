@@ -7,7 +7,19 @@ metadata:
     app.kubernetes.io/name: redis
     app.kubernetes.io/instance: nextcloud
 data:
-  ping_liveness_local.sh: "#!/bin/bash\nresponse=$(redis-cli -h localhost -p 6379\
-    \ ping)\nif [ \"$response\" != \"PONG\" ]; then\n  exit 1\nfi\n"
-  ping_readiness_local.sh: "#!/bin/bash\nresponse=$(redis-cli -h localhost -p 6379\
-    \ ping)\nif [ \"$response\" != \"PONG\" ]; then\n  exit 1\nfi\n"
+  ping_liveness_local.sh: |
+    #!/bin/bash
+    # Read password from secret
+    REDIS_PASSWORD=$(cat /opt/bitnami/redis/secrets/redis-password)
+    response=$(redis-cli -h localhost -p 6379 -a "$REDIS_PASSWORD" ping)
+    if [ "$response" != "PONG" ]; then
+      exit 1
+    fi
+  ping_readiness_local.sh: |
+    #!/bin/bash
+    # Read password from secret
+    REDIS_PASSWORD=$(cat /opt/bitnami/redis/secrets/redis-password)
+    response=$(redis-cli -h localhost -p 6379 -a "$REDIS_PASSWORD" ping)
+    if [ "$response" != "PONG" ]; then
+      exit 1
+    fi
