@@ -111,6 +111,7 @@ metadata:
     app.kubernetes.io/name: nextcloud
     app.kubernetes.io/instance: nextcloud
 spec:
+  storageClassName: local-path  # Change this to your storage class
   accessModes:
     - ReadWriteOnce
   resources:
