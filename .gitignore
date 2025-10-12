@@ -43,6 +43,9 @@ ENV/
 secret*.yaml
 *secret*.yaml
 
+# Allow sealed secrets (they are encrypted and safe to commit)
+!*sealedsecret*.yaml
+
 # Temporary files
 *.tmp
 *.bak
