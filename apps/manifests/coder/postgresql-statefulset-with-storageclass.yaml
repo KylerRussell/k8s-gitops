@@ -65,7 +65,24 @@ spec:
       name: postgres-data
     spec:
       accessModes: [ "ReadWriteOnce" ]
+      # STORAGE CLASS CONFIGURATION
+      # Uncomment and set one of these based on your cluster:
+      
+      # For local-path (k3s, kind, microk8s default):
       storageClassName: "local-path"
+      
+      # For standard (GKE, some bare metal):
+      # storageClassName: "standard"
+      
+      # For hostpath (some clusters):
+      # storageClassName: "hostpath"
+      
+      # For longhorn (if installed):
+      # storageClassName: "longhorn"
+      
+      # Leave empty to use default storage class:
+      # storageClassName: ""
+      
       resources:
         requests:
           storage: 10Gi
