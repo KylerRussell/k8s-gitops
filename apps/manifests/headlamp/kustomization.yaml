@@ -10,3 +10,4 @@ resources:
   - headlamp-service.yaml
   - headlamp-ingress.yaml
   - headlamp-oidc-sealedsecret.yaml
+  - oidc-rbac.yaml
