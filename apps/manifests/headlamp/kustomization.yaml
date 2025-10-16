@@ -9,5 +9,4 @@ resources:
   - headlamp-deployment.yaml
   - headlamp-service.yaml
   - headlamp-ingress.yaml
-  # Uncomment when you create your sealed secret for OIDC
-  # - headlamp-oidc-sealedsecret.yaml
+  - headlamp-oidc-sealedsecret.yaml

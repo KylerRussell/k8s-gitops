@@ -36,22 +36,21 @@ spec:
         - name: HEADLAMP_CONFIG_IN_CLUSTER
           value: "true"
         
-        # OIDC Configuration
-        # Uncomment and configure these when you set up OIDC
-        # - name: OIDC_CLIENT_ID
-        #   valueFrom:
-        #     secretKeyRef:
-        #       name: headlamp-oidc
-        #       key: client-id
-        # - name: OIDC_CLIENT_SECRET
-        #   valueFrom:
-        #     secretKeyRef:
-        #       name: headlamp-oidc
-        #       key: client-secret
-        # - name: OIDC_ISSUER_URL
-        #   value: ""  # e.g., https://accounts.google.com
-        # - name: OIDC_SCOPES
-        #   value: "openid profile email"
+        # OIDC Configuration - Google OAuth
+        - name: OIDC_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: headlamp-oidc
+              key: client-id
+        - name: OIDC_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: headlamp-oidc
+              key: client-secret
+        - name: OIDC_ISSUER_URL
+          value: "https://accounts.google.com"
+        - name: OIDC_SCOPES
+          value: "openid profile email"
         
         # Alternative: Enable built-in authentication
         # This allows you to create users directly in Headlamp
