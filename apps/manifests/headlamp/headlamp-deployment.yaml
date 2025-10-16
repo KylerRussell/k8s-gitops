@@ -37,19 +37,20 @@ spec:
           value: "true"
         
         # OIDC Configuration - Google OAuth
-        - name: OIDC_CLIENT_ID
+        # Note: Headlamp requires HEADLAMP_CONFIG_ prefix for env vars
+        - name: HEADLAMP_CONFIG_OIDC_CLIENT_ID
           valueFrom:
             secretKeyRef:
               name: headlamp-oidc
               key: client-id
-        - name: OIDC_CLIENT_SECRET
+        - name: HEADLAMP_CONFIG_OIDC_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
               name: headlamp-oidc
               key: client-secret
-        - name: OIDC_ISSUER_URL
+        - name: HEADLAMP_CONFIG_OIDC_IDP_ISSUER_URL
           value: "https://accounts.google.com"
-        - name: OIDC_SCOPES
+        - name: HEADLAMP_CONFIG_OIDC_SCOPES
           value: "openid profile email"
         
         # Alternative: Enable built-in authentication
