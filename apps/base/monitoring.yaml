@@ -55,6 +55,25 @@ spec:
             runAsUser: 0
             runAsGroup: 0
             fsGroup: 0
+            runAsNonRoot: false
+          # Allow containers to run as root
+          containerSecurityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            runAsNonRoot: false
+            allowPrivilegeEscalation: true
+            capabilities:
+              drop: []
+          # Sidecar containers also need proper security context
+          sidecar:
+            dashboards:
+              securityContext:
+                runAsUser: 0
+                runAsNonRoot: false
+            datasources:
+              securityContext:
+                runAsUser: 0
+                runAsNonRoot: false
           persistence:
             enabled: true
             storageClassName: local-path
