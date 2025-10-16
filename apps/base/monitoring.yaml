@@ -17,6 +17,12 @@ spec:
         prometheus:
           prometheusSpec:
             retention: 30d
+            # Fix permission issues with local-path-provisioner
+            securityContext:
+              runAsUser: 0
+              runAsGroup: 0
+              fsGroup: 0
+              runAsNonRoot: false
             storageSpec:
               volumeClaimTemplate:
                 spec:
@@ -42,6 +48,13 @@ spec:
         # Grafana configuration
         grafana:
           adminPassword: admin
+          # Fix permission issues with local-path-provisioner
+          initChownData:
+            enabled: false
+          securityContext:
+            runAsUser: 0
+            runAsGroup: 0
+            fsGroup: 0
           persistence:
             enabled: true
             storageClassName: local-path
@@ -60,6 +73,12 @@ spec:
         # Alertmanager configuration
         alertmanager:
           alertmanagerSpec:
+            # Fix permission issues with local-path-provisioner
+            securityContext:
+              runAsUser: 0
+              runAsGroup: 0
+              fsGroup: 0
+              runAsNonRoot: false
             storage:
               volumeClaimTemplate:
                 spec:
