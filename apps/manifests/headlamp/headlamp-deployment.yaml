@@ -28,9 +28,9 @@ spec:
           name: http
           protocol: TCP
         env:
-        # Base URL (set this to your ingress URL)
+        # Base URL - should be a path or empty (not full URL)
         - name: HEADLAMP_CONFIG_BASE_URL
-          value: "http://headlamp.homelab.com"
+          value: ""
         
         # Enable in-cluster config (running inside Kubernetes)
         - name: HEADLAMP_CONFIG_IN_CLUSTER
