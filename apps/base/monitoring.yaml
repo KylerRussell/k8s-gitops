@@ -55,16 +55,7 @@ spec:
               - grafana.homelab.com
             path: /
             pathType: Prefix
-          # Pre-configure Prometheus datasource
-          datasources:
-            datasources.yaml:
-              apiVersion: 1
-              datasources:
-              - name: Prometheus
-                type: prometheus
-                url: http://monitoring-kube-prometheus-prometheus:9090
-                access: proxy
-                isDefault: true
+          # Prometheus datasource is auto-configured by kube-prometheus-stack
         
         # Alertmanager configuration
         alertmanager:
