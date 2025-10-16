@@ -1,0 +1,38 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: headlamp-config
+  namespace: headlamp
+data:
+  config.json: |
+    {
+      "oidc": {
+        "clientID": "",
+        "clientSecret": "",
+        "issuerURL": "",
+        "scopes": ""
+      },
+      "baseURL": "",
+      "pluginsDir": "/headlamp/plugins"
+    }
+  headlamp-config.yaml: |
+    # Headlamp Configuration
+    # 
+    # To enable OIDC authentication, fill in these values:
+    # - clientID: Your OIDC client ID (e.g., from Google, GitHub, Keycloak)
+    # - clientSecret: Your OIDC client secret (should be stored as a Secret, not ConfigMap)
+    # - issuerURL: Your OIDC provider URL
+    # - scopes: OIDC scopes (typically "openid profile email")
+    #
+    # Example for Google:
+    # clientID: "your-app.apps.googleusercontent.com"
+    # issuerURL: "https://accounts.google.com"
+    # scopes: "openid profile email"
+    #
+    # Example for GitHub (using Dex):
+    # clientID: "your-github-oauth-app-id"
+    # issuerURL: "https://dex.example.com"
+    # scopes: "openid profile email groups"
+    
+    # Base URL for Headlamp (set this to your ingress URL)
+    baseURL: ""

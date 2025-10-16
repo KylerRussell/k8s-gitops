@@ -1,0 +1,85 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: headlamp
+  namespace: headlamp
+  labels:
+    app: headlamp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: headlamp
+  template:
+    metadata:
+      labels:
+        app: headlamp
+    spec:
+      serviceAccountName: headlamp
+      containers:
+      - name: headlamp
+        image: ghcr.io/headlamp-k8s/headlamp:v0.35.0
+        imagePullPolicy: IfNotPresent
+        args:
+        - -in-cluster
+        - -plugins-dir=/headlamp/plugins
+        ports:
+        - containerPort: 4466
+          name: http
+          protocol: TCP
+        env:
+        # Base URL (set this to your ingress URL)
+        - name: HEADLAMP_CONFIG_BASE_URL
+          value: "http://headlamp.homelab.com"
+        
+        # Enable in-cluster config (running inside Kubernetes)
+        - name: HEADLAMP_CONFIG_IN_CLUSTER
+          value: "true"
+        
+        # OIDC Configuration
+        # Uncomment and configure these when you set up OIDC
+        # - name: OIDC_CLIENT_ID
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: headlamp-oidc
+        #       key: client-id
+        # - name: OIDC_CLIENT_SECRET
+        #   valueFrom:
+        #     secretKeyRef:
+        #       name: headlamp-oidc
+        #       key: client-secret
+        # - name: OIDC_ISSUER_URL
+        #   value: ""  # e.g., https://accounts.google.com
+        # - name: OIDC_SCOPES
+        #   value: "openid profile email"
+        
+        # Alternative: Enable built-in authentication
+        # This allows you to create users directly in Headlamp
+        # - name: HEADLAMP_CONFIG_ENABLE_HELM
+        #   value: "true"
+        
+        livenessProbe:
+          httpGet:
+            path: /
+            port: 4466
+          initialDelaySeconds: 30
+          periodSeconds: 10
+        readinessProbe:
+          httpGet:
+            path: /
+            port: 4466
+          initialDelaySeconds: 5
+          periodSeconds: 5
+        resources: {}
+        securityContext:
+          privileged: false
+          runAsUser: 100
+          runAsGroup: 101
+          runAsNonRoot: true
+        volumeMounts:
+        - name: config
+          mountPath: /headlamp/config
+      volumes:
+      - name: config
+        configMap:
+          name: headlamp-config
