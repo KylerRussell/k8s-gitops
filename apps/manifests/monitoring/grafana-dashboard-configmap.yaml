@@ -1,0 +1,105 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: pvc-monitoring-dashboard
+  namespace: monitoring
+  labels:
+    grafana_dashboard: "1"
+data:
+  pvc-dashboard.json: |
+    {
+      "dashboard": {
+        "title": "Kubernetes Persistent Volumes",
+        "uid": "pvc-monitoring",
+        "editable": true,
+        "links": [],
+        "panels": [
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "unit": "percentunit",
+                "thresholds": {
+                  "mode": "absolute",
+                  "steps": [
+                    {"color": "green", "value": null},
+                    {"color": "yellow", "value": 0.7},
+                    {"color": "orange", "value": 0.85},
+                    {"color": "red", "value": 0.95}
+                  ]
+                }
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 0, "y": 0},
+            "id": 1,
+            "targets": [
+              {
+                "expr": "kubelet_volume_stats_used_bytes / kubelet_volume_stats_capacity_bytes",
+                "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}"
+              }
+            ],
+            "title": "PVC Usage Percentage",
+            "type": "timeseries"
+          },
+          {
+            "datasource": "Prometheus",
+            "fieldConfig": {
+              "defaults": {
+                "unit": "bytes"
+              }
+            },
+            "gridPos": {"h": 8, "w": 12, "x": 12, "y": 0},
+            "id": 2,
+            "targets": [
+              {
+                "expr": "kubelet_volume_stats_available_bytes",
+                "legendFormat": "{{namespace}}/{{persistentvolumeclaim}}"
+              }
+            ],
+            "title": "Available Space",
+            "type": "timeseries"
+          },
+          {
+            "datasource": "Prometheus",
+            "gridPos": {"h": 9, "w": 24, "x": 0, "y": 8},
+            "id": 3,
+            "targets": [
+              {
+                "expr": "kubelet_volume_stats_used_bytes",
+                "format": "table",
+                "instant": true
+              }
+            ],
+            "title": "PVC Usage Table",
+            "type": "table",
+            "transformations": [
+              {
+                "id": "organize",
+                "options": {
+                  "excludeByName": {
+                    "Time": true,
+                    "__name__": true,
+                    "instance": true,
+                    "job": true
+                  }
+                }
+              }
+            ]
+          }
+        ],
+        "refresh": "30s",
+        "schemaVersion": 27,
+        "style": "dark",
+        "tags": ["kubernetes", "storage", "pvc"],
+        "templating": {
+          "list": []
+        },
+        "time": {
+          "from": "now-6h",
+          "to": "now"
+        },
+        "timepicker": {},
+        "timezone": "browser",
+        "version": 1
+      }
+    }
