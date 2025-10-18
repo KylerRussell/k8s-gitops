@@ -1,0 +1,13 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: kuberay-system
+
+resources:
+- raycluster.yaml
+- ray-dashboard-ingress.yaml
+
+# Add common labels
+commonLabels:
+  app: ray-cluster
+  environment: production
+  managed-by: argocd

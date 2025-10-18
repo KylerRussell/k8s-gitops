@@ -1,0 +1,158 @@
+{
+  "dashboard": {
+    "title": "All Nodes Disk Usage Overview",
+    "uid": "all-nodes-disk-usage",
+    "editable": true,
+    "panels": [
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "min": 0,
+            "max": 100,
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "orange", "value": 85},
+                {"color": "red", "value": 95}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 0},
+        "id": 1,
+        "targets": [
+          {
+            "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/\"} * 100) / node_filesystem_size_bytes{mountpoint=\"/\"})",
+            "legendFormat": "{{instance}} - Root Filesystem",
+            "refId": "A"
+          }
+        ],
+        "title": "Node Disk Usage Percentage - All Nodes",
+        "type": "timeseries"
+      },
+      {
+        "datasource": "Prometheus",
+        "gridPos": {"h": 8, "w": 12, "x": 0, "y": 8},
+        "id": 2,
+        "targets": [
+          {
+            "expr": "node_filesystem_size_bytes{mountpoint=\"/\"}",
+            "legendFormat": "{{instance}} - Total",
+            "refId": "A",
+            "format": "table",
+            "instant": true
+          },
+          {
+            "expr": "node_filesystem_size_bytes{mountpoint=\"/\"} - node_filesystem_avail_bytes{mountpoint=\"/\"}",
+            "legendFormat": "{{instance}} - Used",
+            "refId": "B",
+            "format": "table",
+            "instant": true
+          },
+          {
+            "expr": "node_filesystem_avail_bytes{mountpoint=\"/\"}",
+            "legendFormat": "{{instance}} - Available",
+            "refId": "C",
+            "format": "table",
+            "instant": true
+          }
+        ],
+        "title": "Disk Space by Node (Table)",
+        "type": "table",
+        "transformations": [
+          {
+            "id": "merge"
+          },
+          {
+            "id": "organize",
+            "options": {
+              "excludeByName": {
+                "Time": true,
+                "__name__": true,
+                "job": true,
+                "device": true,
+                "fstype": true,
+                "mountpoint": true
+              },
+              "renameByName": {
+                "instance": "Node",
+                "Value #A": "Total Size",
+                "Value #B": "Used",
+                "Value #C": "Available"
+              }
+            }
+          }
+        ]
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "percent",
+            "thresholds": {
+              "mode": "absolute",
+              "steps": [
+                {"color": "green", "value": 0},
+                {"color": "yellow", "value": 70},
+                {"color": "orange", "value": 85},
+                {"color": "red", "value": 95}
+              ]
+            }
+          }
+        },
+        "gridPos": {"h": 8, "w": 12, "x": 12, "y": 8},
+        "id": 3,
+        "targets": [
+          {
+            "expr": "100 - ((node_filesystem_avail_bytes{mountpoint=\"/\"} * 100) / node_filesystem_size_bytes{mountpoint=\"/\"})",
+            "legendFormat": "{{instance}}",
+            "refId": "A",
+            "instant": true
+          }
+        ],
+        "title": "Current Disk Usage % - All Nodes",
+        "type": "bargauge",
+        "options": {
+          "orientation": "horizontal",
+          "displayMode": "gradient"
+        }
+      },
+      {
+        "datasource": "Prometheus",
+        "fieldConfig": {
+          "defaults": {
+            "unit": "bytes"
+          }
+        },
+        "gridPos": {"h": 8, "w": 24, "x": 0, "y": 16},
+        "id": 4,
+        "targets": [
+          {
+            "expr": "node_filesystem_avail_bytes{mountpoint=\"/\"}",
+            "legendFormat": "{{instance}} - Available",
+            "refId": "A"
+          }
+        ],
+        "title": "Available Disk Space Over Time - All Nodes",
+        "type": "timeseries"
+      }
+    ],
+    "refresh": "30s",
+    "schemaVersion": 38,
+    "style": "dark",
+    "tags": ["kubernetes", "storage", "nodes"],
+    "templating": {
+      "list": []
+    },
+    "time": {
+      "from": "now-24h",
+      "to": "now"
+    },
+    "timezone": "browser",
+    "version": 1
+  }
+}

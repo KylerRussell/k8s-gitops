@@ -1,0 +1,45 @@
+# KubeRay Operator Configuration
+# Manages RayCluster lifecycle in Kubernetes
+
+# Resource limits for the operator itself (not the Ray clusters)
+resources:
+  limits:
+    cpu: "1000m"
+    memory: "1Gi"
+  requests:
+    cpu: "500m"
+    memory: "512Mi"
+
+# RBAC configuration
+rbacEnable: true
+
+# Watch all namespaces for RayCluster resources
+singleNamespaceInstall: false
+
+# High availability
+leaderElectionEnabled: true
+
+# Reconciliation settings
+reconcileConcurrency: 3
+
+# API server rate limits - important for large clusters
+kubeClient:
+  qps: 100
+  burst: 200
+
+# Enable metrics for monitoring
+metrics:
+  enabled: true
+  serviceMonitor:
+    enabled: true
+    interval: "30s"
+    honorLabels: true
+
+# Service account configuration
+serviceAccount:
+  create: true
+  name: kuberay-operator
+
+# Batch scheduling support (useful for distributed AI workloads)
+batchScheduler:
+  enabled: false  # Enable if using volcano, yunikorn, etc.
