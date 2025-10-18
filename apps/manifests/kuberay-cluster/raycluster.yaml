@@ -34,7 +34,7 @@ spec:
       # CRITICAL: Set to "0" to prevent task scheduling on head
       num-cpus: "0"
       # Head memory - enough for GCS and dashboard
-      memory: "53687091200"  # 50GB in bytes
+      memory: "32212254720"  # 30GB in bytes
       metrics-export-port: "8080"
       # Object store MUST be less than /dev/shm size
       object-store-memory: "17179869184"  # 16GB (leaving 4GB headroom from 20GB shm)
@@ -68,10 +68,10 @@ spec:
             # Head resources - control plane operations
             resources:
               limits:
-                cpu: "8"         # Reduced from 16 to be more conservative
-                memory: "32Gi"   # Reduced from 50Gi
+                cpu: "8"
+                memory: "32Gi"
               requests:
-                cpu: "4"         # Requests lower than limits
+                cpu: "4"
                 memory: "16Gi"
             
             ports:
@@ -124,31 +124,44 @@ spec:
               # Allow object store to use standard filesystem if needed
               - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
                 value: "1"
+              # Hugging Face cache location
+              - name: HF_HOME
+                value: "/models/.cache/huggingface"
+              - name: TRANSFORMERS_CACHE
+                value: "/models/.cache/huggingface/transformers"
             
-            # Shared memory for object store
+            # Volume mounts
             volumeMounts:
               - name: dshm
                 mountPath: /dev/shm
+              - name: model-storage
+                mountPath: /models
         
         volumes:
           - name: dshm
             emptyDir:
               medium: Memory
               sizeLimit: 20Gi
+          # Persistent storage for AI models (uses local disk)
+          - name: model-storage
+            hostPath:
+              path: /mnt/models
+              type: DirectoryOrCreate
   
-  # Worker group - MAXIMIZED for distributed AI workloads
+  # Worker group - MAXIMIZED for 235B models at BF16
   workerGroupSpecs:
     - groupName: ai-workers
-      # Start with 2 workers, can scale 0-3
-      replicas: 2
+      # Start with 3 workers for large models (235B needs ~470GB)
+      replicas: 3
       minReplicas: 0
       maxReplicas: 3
       
       rayStartParams:
         # Workers use full resources - auto-detected from limits
         metrics-export-port: "8080"
-        # Object store MUST be less than /dev/shm (100GB shm = 90GB object store)
-        object-store-memory: "96636764160"  # 90GB (leaving 10GB headroom)
+        # Object store for computation (tensors, intermediate results)
+        # Increased to 120GB per worker for large model inference
+        object-store-memory: "128849018880"  # 120GB (leaving 30GB headroom from 150GB shm)
       
       template:
         metadata:
@@ -174,15 +187,16 @@ spec:
               image: rayproject/ray:2.9.0
               imagePullPolicy: IfNotPresent
               
-              # Optimized resources for 357B model distribution
-              # Conservative to ensure scheduling works
+              # MAXIMIZED resources for 235B model at BF16 (~470GB)
+              # Each worker: 60 cores, 240GB RAM
+              # 3 workers = 180 cores, 720GB RAM total
               resources:
                 limits:
-                  cpu: "56"        # Reduced slightly from 58
-                  memory: "200Gi"  # Reduced from 220Gi to ensure scheduling
+                  cpu: "60"         # Maximum CPU per worker
+                  memory: "240Gi"   # Maximum memory per worker
                 requests:
-                  cpu: "48"        # Requests lower than limits
-                  memory: "180Gi"  # Requests lower than limits
+                  cpu: "55"         # Request slightly lower
+                  memory: "230Gi"   # Request slightly lower
               
               ports:
                 - containerPort: 8080
@@ -209,10 +223,10 @@ spec:
                 # Memory management
                 - name: RAY_memory_monitor_refresh_ms
                   value: "250"
-                # Object spilling for memory pressure
+                # Object spilling to disk for memory pressure
                 - name: RAY_object_spilling_config
                   value: '{"type":"filesystem","params":{"directory_path":"/tmp/ray"}}'
-                # Optimize for large objects
+                # Optimize for large objects (model weights)
                 - name: RAY_max_direct_call_object_size
                   value: "100000000"  # 100MB
                 # Plasma store configuration
@@ -221,20 +235,37 @@ spec:
                 # Allow slow storage as fallback
                 - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
                   value: "1"
+                # Hugging Face cache on persistent storage
+                - name: HF_HOME
+                  value: "/models/.cache/huggingface"
+                - name: TRANSFORMERS_CACHE
+                  value: "/models/.cache/huggingface/transformers"
+                # PyTorch optimizations
+                - name: OMP_NUM_THREADS
+                  value: "60"
+                - name: MKL_NUM_THREADS
+                  value: "60"
               
-              # Large shared memory for object store
+              # Volume mounts
               volumeMounts:
                 - name: dshm
                   mountPath: /dev/shm
                 - name: ray-temp
                   mountPath: /tmp/ray
+                - name: model-storage
+                  mountPath: /models
           
           volumes:
             - name: dshm
               emptyDir:
                 medium: Memory
-                # 100GB shared memory per worker for model weights
-                sizeLimit: 100Gi
+                # 150GB shared memory per worker for large tensors
+                sizeLimit: 150Gi
             - name: ray-temp
               emptyDir:
-                sizeLimit: 50Gi  # Spillover storage
+                sizeLimit: 100Gi  # Spillover storage for large models
+            # Persistent storage for AI models (shared across workers)
+            - name: model-storage
+              hostPath:
+                path: /mnt/models
+                type: DirectoryOrCreate
