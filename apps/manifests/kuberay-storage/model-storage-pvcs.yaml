@@ -1,0 +1,51 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ray-models-head
+  namespace: kuberay-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 100Gi  # Smaller for head, mainly for cache
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ray-models-worker-0
+  namespace: kuberay-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 500Gi  # Large for model storage
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ray-models-worker-1
+  namespace: kuberay-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 500Gi
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ray-models-worker-2
+  namespace: kuberay-system
+spec:
+  accessModes:
+    - ReadWriteOnce
+  storageClassName: local-path
+  resources:
+    requests:
+      storage: 500Gi

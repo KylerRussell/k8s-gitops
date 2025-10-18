@@ -1,0 +1,12 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: ray-models-shared
+  namespace: kuberay-system
+spec:
+  accessModes:
+    - ReadWriteMany  # Requires NFS or Longhorn
+  storageClassName: nfs-models  # Change to your RWX storage class
+  resources:
+    requests:
+      storage: 1Ti  # 1TB for AI models
