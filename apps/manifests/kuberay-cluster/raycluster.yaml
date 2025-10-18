@@ -36,8 +36,8 @@ spec:
       # Head memory - enough for GCS and dashboard
       memory: "53687091200"  # 50GB in bytes
       metrics-export-port: "8080"
-      # Optimize for large models
-      object-store-memory: "21474836480"  # 20GB for head's object store
+      # Object store MUST be less than /dev/shm size
+      object-store-memory: "17179869184"  # 16GB (leaving 4GB headroom from 20GB shm)
     
     template:
       metadata:
@@ -68,11 +68,11 @@ spec:
             # Head resources - control plane operations
             resources:
               limits:
-                cpu: "16"
-                memory: "50Gi"
+                cpu: "8"         # Reduced from 16 to be more conservative
+                memory: "32Gi"   # Reduced from 50Gi
               requests:
-                cpu: "16"
-                memory: "50Gi"
+                cpu: "4"         # Requests lower than limits
+                memory: "16Gi"
             
             ports:
               - containerPort: 6379
@@ -121,6 +121,9 @@ spec:
               # Memory management for large models
               - name: RAY_memory_monitor_refresh_ms
                 value: "250"
+              # Allow object store to use standard filesystem if needed
+              - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
+                value: "1"
             
             # Shared memory for object store
             volumeMounts:
@@ -144,8 +147,8 @@ spec:
       rayStartParams:
         # Workers use full resources - auto-detected from limits
         metrics-export-port: "8080"
-        # Large object store for model weights and tensors
-        object-store-memory: "107374182400"  # 100GB per worker
+        # Object store MUST be less than /dev/shm (100GB shm = 90GB object store)
+        object-store-memory: "96636764160"  # 90GB (leaving 10GB headroom)
       
       template:
         metadata:
@@ -166,23 +169,20 @@ spec:
                           - ray-worker
                   topologyKey: kubernetes.io/hostname
           
-          # Prioritize these pods
-          priorityClassName: system-node-critical
-          
           containers:
             - name: ray-worker
               image: rayproject/ray:2.9.0
               imagePullPolicy: IfNotPresent
               
-              # MAXIMIZED resources for 357B model distribution
-              # Each worker gets 58 cores and 220GB RAM
+              # Optimized resources for 357B model distribution
+              # Conservative to ensure scheduling works
               resources:
                 limits:
-                  cpu: "58"
-                  memory: "220Gi"
+                  cpu: "56"        # Reduced slightly from 58
+                  memory: "200Gi"  # Reduced from 220Gi to ensure scheduling
                 requests:
-                  cpu: "58"
-                  memory: "220Gi"
+                  cpu: "48"        # Requests lower than limits
+                  memory: "180Gi"  # Requests lower than limits
               
               ports:
                 - containerPort: 8080
@@ -218,6 +218,9 @@ spec:
                 # Plasma store configuration
                 - name: RAY_plasma_store_socket_name
                   value: "/tmp/ray/plasma_store"
+                # Allow slow storage as fallback
+                - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
+                  value: "1"
               
               # Large shared memory for object store
               volumeMounts:
