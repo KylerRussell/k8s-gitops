@@ -27,7 +27,7 @@ spec:
         - key: kubernetes.io/hostname
           operator: In
           values:
-          - talos-dmt-nnk  # Using worker node
+          - talos-dmt-nnk
 ---
 apiVersion: v1
 kind: PersistentVolumeClaim
@@ -60,8 +60,10 @@ spec:
       labels:
         app: nfs-server
     spec:
+      hostNetwork: true
+      hostPID: true
       nodeSelector:
-        kubernetes.io/hostname: talos-dmt-nnk  # Pin to same node as PV
+        kubernetes.io/hostname: talos-dmt-nnk
       containers:
       - name: nfs-server
         image: itsthenetwork/nfs-server-alpine:latest
@@ -74,16 +76,26 @@ spec:
           containerPort: 111
         securityContext:
           privileged: true
+          capabilities:
+            add:
+              - SYS_ADMIN
+              - SETPCAP
         env:
         - name: SHARED_DIRECTORY
           value: "/exports"
         volumeMounts:
         - name: nfs-storage
           mountPath: /exports
+        - name: nfsd
+          mountPath: /proc/fs/nfsd
       volumes:
       - name: nfs-storage
         persistentVolumeClaim:
           claimName: nfs-server-pvc
+      - name: nfsd
+        hostPath:
+          path: /proc/fs/nfsd
+          type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
