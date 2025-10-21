@@ -60,13 +60,11 @@ spec:
       labels:
         app: nfs-server
     spec:
-      hostNetwork: true
-      hostPID: true
       nodeSelector:
         kubernetes.io/hostname: talos-dmt-nnk
       containers:
       - name: nfs-server
-        image: itsthenetwork/nfs-server-alpine:latest
+        image: erichough/nfs-server:latest
         ports:
         - name: nfs
           containerPort: 2049
@@ -81,21 +79,15 @@ spec:
               - SYS_ADMIN
               - SETPCAP
         env:
-        - name: SHARED_DIRECTORY
-          value: "/exports"
+        - name: NFS_EXPORT_0
+          value: "/exports *(rw,sync,no_subtree_check,no_root_squash,fsid=0)"
         volumeMounts:
         - name: nfs-storage
           mountPath: /exports
-        - name: nfsd
-          mountPath: /proc/fs/nfsd
       volumes:
       - name: nfs-storage
         persistentVolumeClaim:
           claimName: nfs-server-pvc
-      - name: nfsd
-        hostPath:
-          path: /proc/fs/nfsd
-          type: DirectoryOrCreate
 ---
 apiVersion: v1
 kind: Service
