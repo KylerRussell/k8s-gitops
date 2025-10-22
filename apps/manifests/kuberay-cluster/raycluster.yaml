@@ -6,7 +6,6 @@ metadata:
   labels:
     ray.io/cluster: distributed-ai-cluster
 spec:
-  suspend: true
   # Ray version - use specific version for stability
   rayVersion: "2.9.0"
   
