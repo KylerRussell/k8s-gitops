@@ -145,7 +145,7 @@ spec:
           # Persistent storage for AI models (uses local disk)
           - name: model-storage
             hostPath:
-              path: /mnt/models
+              path: /var/lib/models
               type: DirectoryOrCreate
   
   # Worker group - MAXIMIZED for 235B models at BF16
@@ -267,5 +267,5 @@ spec:
             # Persistent storage for AI models (shared across workers)
             - name: model-storage
               hostPath:
-                path: /mnt/models
+                path: /var/lib/models
                 type: DirectoryOrCreate
