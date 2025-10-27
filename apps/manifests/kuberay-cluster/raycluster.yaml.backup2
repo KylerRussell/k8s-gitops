@@ -60,17 +60,6 @@ spec:
                           - ray-worker
                   topologyKey: kubernetes.io/hostname
         
-        initContainers:
-          - name: fix-permissions
-            image: busybox
-            command: ["sh", "-c"]
-            args:
-              - |
-                mkdir -p /models/.cache/huggingface &&
-                chmod -R 777 /models
-            volumeMounts:
-              - mountPath: /models
-                name: model-storage
         containers:
           - name: ray-head
             image: rayproject/ray:2.9.0
@@ -192,17 +181,6 @@ spec:
                         values:
                           - ray-worker
                   topologyKey: kubernetes.io/hostname
-          initContainers:
-            - name: fix-permissions
-              image: busybox
-              command: ["sh", "-c"]
-              args:
-                - |
-                  mkdir -p /models/.cache/huggingface &&
-                  chmod -R 777 /models
-              volumeMounts:
-                - mountPath: /models
-                  name: model-storage
           
           containers:
             - name: ray-worker
