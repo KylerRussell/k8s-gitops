@@ -215,10 +215,10 @@ spec:
               resources:
                 limits:
                   cpu: "60"         # Maximum CPU per worker
-                  memory: "240Gi"   # Maximum memory per worker
+                  memory: "250Gi"   # Increased to use more of node's 252GB
                 requests:
                   cpu: "55"         # Request slightly lower
-                  memory: "230Gi"   # Request slightly lower
+                  memory: "240Gi"   # Request slightly lower
               
               ports:
                 - containerPort: 8080
