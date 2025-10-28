@@ -7,7 +7,7 @@ metadata:
     ray.io/cluster: distributed-ai-cluster
 spec:
   # Ray version - use specific version for stability
-  rayVersion: "2.9.0"
+  rayVersion: "2.10.0"
   
   # Enable autoscaling for dynamic workloads
   enableInTreeAutoscaling: true
@@ -73,7 +73,7 @@ spec:
                 name: model-storage
         containers:
           - name: ray-head
-            image: rayproject/ray:2.9.0
+            image: rayproject/ray:2.10.0
             imagePullPolicy: IfNotPresent
             
             # Head resources - control plane operations
@@ -206,7 +206,7 @@ spec:
           
           containers:
             - name: ray-worker
-              image: rayproject/ray:2.9.0
+              image: rayproject/ray:2.10.0
               imagePullPolicy: IfNotPresent
               
               # MAXIMIZED resources for 235B model at BF16 (~470GB)
