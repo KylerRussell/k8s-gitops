@@ -7,7 +7,7 @@ metadata:
     ray.io/cluster: distributed-ai-cluster
 spec:
   rayVersion: "2.50.1"
-  enableInTreeAutoscaling: true
+  enableInTreeAutoscaling: false
   autoscalerOptions:
     idleTimeoutSeconds: 600
     upscalingMode: Default
@@ -152,7 +152,7 @@ spec:
   workerGroupSpecs:
     - groupName: ai-workers
       replicas: 2
-      minReplicas: 0
+      minReplicas: 2
       maxReplicas: 2
       rayStartParams:
         metrics-export-port: "8080"
