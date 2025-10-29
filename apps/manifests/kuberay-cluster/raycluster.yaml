@@ -6,7 +6,8 @@ metadata:
   labels:
     ray.io/cluster: distributed-ai-cluster
 spec:
-  rayVersion: "2.30.0"
+  # UPDATED: Use the latest Ray version
+  rayVersion: "2.50.1"
   enableInTreeAutoscaling: true
   autoscalerOptions:
     idleTimeoutSeconds: 600
@@ -24,7 +25,7 @@ spec:
     rayStartParams:
       dashboard-host: "0.0.0.0"
       num-cpus: "55"
-      memory: "236223201280" # 220Gi in bytes (220*1024*1024*1024)
+      memory: "236223201280" # 220Gi in bytes
       metrics-export-port: "8080"
       object-store-memory: "128849018880" # 120Gi
     template:
@@ -59,17 +60,15 @@ spec:
                 name: model-storage
 
           - name: install-transformers
-            image: rayproject/ray:2.30.0
+            # UPDATED: Use the corresponding Ray image version
+            image: rayproject/ray:2.50.1
             command: ["/bin/bash", "-c"]
             args:
               - |
                 echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
                 mkdir -p /tmp/pip-packages
-                # Install vllm first
+                # Keep installing dependencies, but no pinning needed
                 pip install --no-cache-dir --target=/tmp/pip-packages vllm "transformers>=4.47.0" accelerate
-                # NOW, pin opentelemetry to the versions Ray Dashboard needs
-                echo "Pinning opentelemetry versions for Ray Dashboard..."
-                pip install --no-cache-dir --target=/tmp/pip-packages "opentelemetry-api==1.19.0" "opentelemetry-sdk==1.19.0" "opentelemetry-exporter-otlp-proto-grpc==1.19.0"
                 echo "Installation complete!"
             volumeMounts:
               - mountPath: /tmp
@@ -77,7 +76,8 @@ spec:
 
         containers:
           - name: ray-head
-            image: rayproject/ray:2.30.0
+            # UPDATED: Use the latest Ray image version
+            image: rayproject/ray:2.50.1
             imagePullPolicy: IfNotPresent
             resources:
               limits:
@@ -99,17 +99,18 @@ spec:
               httpGet:
                 path: /api/version
                 port: 8265
-              initialDelaySeconds: 30
+              initialDelaySeconds: 30 # Allow dashboard time to start
               periodSeconds: 30
               timeoutSeconds: 10
-              failureThreshold: 3
+              failureThreshold: 5
             readinessProbe:
               httpGet:
                 path: /api/version
                 port: 8265
-              initialDelaySeconds: 15
+              initialDelaySeconds: 20 # Allow dashboard time to start
               periodSeconds: 10
               timeoutSeconds: 5
+              failureThreshold: 5
             lifecycle:
               preStop:
                 exec:
@@ -188,17 +189,15 @@ spec:
                   name: model-storage
 
             - name: install-transformers
-              image: rayproject/ray:2.30.0
+              # UPDATED: Use the corresponding Ray image version
+              image: rayproject/ray:2.50.1
               command: ["/bin/bash", "-c"]
               args:
                 - |
                   echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
                   mkdir -p /tmp/pip-packages
-                  # Install vllm first
+                  # Keep installing dependencies, but no pinning needed
                   pip install --no-cache-dir --target=/tmp/pip-packages vllm "transformers>=4.47.0" accelerate
-                  # NOW, pin opentelemetry to the versions Ray Dashboard needs
-                  echo "Pinning opentelemetry versions for Ray Dashboard..."
-                  pip install --no-cache-dir --target=/tmp/pip-packages "opentelemetry-api==1.19.0" "opentelemetry-sdk==1.19.0" "opentelemetry-exporter-otlp-proto-grpc==1.19.0"
                   echo "Installation complete!"
               volumeMounts:
                 - mountPath: /tmp
@@ -206,7 +205,8 @@ spec:
 
           containers:
             - name: ray-worker
-              image: rayproject/ray:2.30.0
+              # UPDATED: Use the latest Ray image version
+              image: rayproject/ray:2.50.1
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
