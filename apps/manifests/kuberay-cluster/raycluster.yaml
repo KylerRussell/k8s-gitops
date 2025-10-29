@@ -158,7 +158,7 @@ spec:
   workerGroupSpecs:
     - groupName: ai-workers
       replicas: 2
-      minReplicas: 0 # <-- THIS IS THE FIX
+      minReplicas: 0
       maxReplicas: 2
       
       rayStartParams:
@@ -247,7 +247,6 @@ spec:
                   value: "100000000"
                 - name: RAY_plasma_store_socket_name
                   value: "/tmp/ray/plasma_store"
-Other: 
                 - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
                   value: "1"
                 - name: HF_HOME
