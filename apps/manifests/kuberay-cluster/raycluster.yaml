@@ -6,15 +6,9 @@ metadata:
   labels:
     ray.io/cluster: distributed-ai-cluster
 spec:
-  # Ray version - use specific version for stability
   rayVersion: "2.30.0"
-  
-  # Enable autoscaling for dynamic workloads
   enableInTreeAutoscaling: true
-  
-  # Autoscaler configuration
   autoscalerOptions:
-    # Scale down idle workers after 10 minutes (longer for big models)
     idleTimeoutSeconds: 600
     upscalingMode: Default
     resources:
@@ -28,13 +22,10 @@ spec:
   # Head node - NOW CONFIGURED AS A WORKER
   headGroupSpec:
     serviceType: ClusterIP
-    
     rayStartParams:
       dashboard-host: "0.0.0.0"
-      # CRITICAL: Set to a non-zero value to enable scheduling
       num-cpus: "55"
-      # Memory parameters aligned with worker nodes
-      memory: "246960619520"  # 230Gi in bytes
+      memory: "236223201280"  # 220Gi in bytes (220*1024*1024*1024)
       metrics-export-port: "8080"
       object-store-memory: "128849018880"  # 120Gi
     
@@ -58,8 +49,6 @@ spec:
                           - ray-worker
                   topologyKey: kubernetes.io/hostname
         
-        # NOTE: Using an initContainer for dependencies is not recommended.
-        # Building a custom image is more reliable and efficient.
         initContainers:
           - name: fix-permissions
             image: busybox
@@ -71,14 +60,14 @@ spec:
             volumeMounts:
               - mountPath: /models
                 name: model-storage
-          # ADDED: initContainer to install dependencies on the head node
+          # UPDATED: Added 'vllm' to the pip install command
           - name: install-transformers
             image: rayproject/ray:2.30.0
             command: ["/bin/bash", "-c"]
             args:
               - |
-                echo "Installing transformers and dependencies on head..."
-                pip install --no-cache-dir transformers>=4.47.0 accelerate
+                echo "Installing vllm, transformers, and dependencies on head..."
+                pip install --no-cache-dir vllm transformers>=4.47.0 accelerate
                 echo "Installation complete!"
                 touch /tmp/transformers-installed
             volumeMounts:
@@ -87,19 +76,15 @@ spec:
 
         containers:
           - name: ray-head
-            # RECOMMENDED: Replace with your own custom image
-            # Example: image: your-repo/ray-with-deps:latest
             image: rayproject/ray:2.30.0
             imagePullPolicy: IfNotPresent
-            
-            # Head resources - now maximized for computation
             resources:
               limits:
                 cpu: "60"
-                memory: "230Gi" # SAFER: Reduced to leave buffer for OS
+                memory: "220Gi" # SAFER: Reduced to 220Gi
               requests:
                 cpu: "55"
-                memory: "230Gi" # SAFER: Reduced to avoid scheduling failure
+                memory: "220Gi" # SAFER: Reduced to 220Gi
             
             ports:
               - containerPort: 6379
@@ -152,7 +137,6 @@ spec:
                 mountPath: /dev/shm
               - name: model-storage
                 mountPath: /models
-              # ADDED: Volume for spilling
               - name: ray-temp
                 mountPath: /tmp/ray
 
@@ -160,21 +144,20 @@ spec:
           - name: dshm
             emptyDir:
               medium: Memory
-              sizeLimit: 150Gi # Increased to match workers
+              sizeLimit: 150Gi
           - name: model-storage
             hostPath:
               path: /var/lib/models
               type: DirectoryOrCreate
-          # ADDED: Volume for spilling
           - name: ray-temp
             emptyDir:
               sizeLimit: 100Gi
 
-  # Worker group - 2 replicas to make a 3-node total cluster
+  # Worker group
   workerGroupSpecs:
     - groupName: ai-workers
       replicas: 2
-      minReplicas: 0 # Can scale down to 0 workers (head remains)
+      minReplicas: 0
       maxReplicas: 2
       
       rayStartParams:
@@ -210,13 +193,14 @@ spec:
               volumeMounts:
                 - mountPath: /models
                   name: model-storage
+            # UPDATED: Added 'vllm' to the pip install command
             - name: install-transformers
               image: rayproject/ray:2.30.0
               command: ["/bin/bash", "-c"]
               args:
                 - |
-                  echo "Installing transformers and dependencies on worker..."
-                  pip install --no-cache-dir transformers>=4.47.0 accelerate
+                  echo "Installing vllm, transformers, and dependencies on worker..."
+                  pip install --no-cache-dir vllm transformers>=4.47.0 accelerate
                   echo "Installation complete!"
                   touch /tmp/transformers-installed
               volumeMounts:
@@ -225,18 +209,15 @@ spec:
           
           containers:
             - name: ray-worker
-              # RECOMMENDED: Replace with your own custom image
-              # Example: image: your-repo/ray-with-deps:latest
               image: rayproject/ray:2.30.0
               imagePullPolicy: IfNotPresent
-              
               resources:
                 limits:
                   cpu: "60"
-                  memory: "230Gi"   # SAFER: Reduced to leave buffer for OS
+                  memory: "220Gi"   # SAFER: Reduced to 220Gi
                 requests:
                   cpu: "55"
-                  memory: "230Gi"   # SAFER: Reduced to avoid scheduling failure
+                  memory: "220Gi"   # SAFER: Reduced to 220Gi
               
               ports:
                 - containerPort: 8080
@@ -263,35 +244,4 @@ spec:
                 - name: RAY_max_direct_call_object_size
                   value: "100000000"
                 - name: RAY_plasma_store_socket_name
-                  value: "/tmp/ray/plasma_store"
-                - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
-                  value: "1"
-                - name: HF_HOME
-                  value: "/models/.cache/huggingface"
-                - name: TRANSFORMERS_CACHE
-                  value: "/models/.cache/huggingface/transformers"
-                - name: OMP_NUM_THREADS
-                  value: "60"
-                - name: MKL_NUM_THREADS
-                  value: "60"
-              
-              volumeMounts:
-                - name: dshm
-                  mountPath: /dev/shm
-                - name: ray-temp
-                  mountPath: /tmp/ray
-                - name: model-storage
-                  mountPath: /models
-          
-          volumes:
-            - name: dshm
-              emptyDir:
-                medium: Memory
-                sizeLimit: 150Gi
-            - name: ray-temp
-              emptyDir:
-                sizeLimit: 100Gi
-            - name: model-storage
-              hostPath:
-                path: /var/lib/models
-                type: DirectoryOrCreate
+                  value: "/tmp/ray/plasma
