@@ -6,7 +6,6 @@ metadata:
   labels:
     ray.io/cluster: distributed-ai-cluster
 spec:
-  # UPDATED: Use the latest Ray version
   rayVersion: "2.50.1"
   enableInTreeAutoscaling: true
   autoscalerOptions:
@@ -60,14 +59,13 @@ spec:
                 name: model-storage
 
           - name: install-transformers
-            # UPDATED: Use the corresponding Ray image version
-            image: rayproject/ray:2.50.1
+            # UPDATED: Use Python 3.10 image
+            image: rayproject/ray:2.50.1-py310
             command: ["/bin/bash", "-c"]
             args:
               - |
                 echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
                 mkdir -p /tmp/pip-packages
-                # Keep installing dependencies, but no pinning needed
                 pip install --no-cache-dir --target=/tmp/pip-packages vllm "transformers>=4.47.0" accelerate
                 echo "Installation complete!"
             volumeMounts:
@@ -76,8 +74,8 @@ spec:
 
         containers:
           - name: ray-head
-            # UPDATED: Use the latest Ray image version
-            image: rayproject/ray:2.50.1
+            # UPDATED: Use Python 3.10 image
+            image: rayproject/ray:2.50.1-py310
             imagePullPolicy: IfNotPresent
             resources:
               limits:
@@ -99,7 +97,7 @@ spec:
               httpGet:
                 path: /api/version
                 port: 8265
-              initialDelaySeconds: 30 # Allow dashboard time to start
+              initialDelaySeconds: 30
               periodSeconds: 30
               timeoutSeconds: 10
               failureThreshold: 5
@@ -107,7 +105,7 @@ spec:
               httpGet:
                 path: /api/version
                 port: 8265
-              initialDelaySeconds: 20 # Allow dashboard time to start
+              initialDelaySeconds: 20
               periodSeconds: 10
               timeoutSeconds: 5
               failureThreshold: 5
@@ -189,14 +187,13 @@ spec:
                   name: model-storage
 
             - name: install-transformers
-              # UPDATED: Use the corresponding Ray image version
-              image: rayproject/ray:2.50.1
+              # UPDATED: Use Python 3.10 image
+              image: rayproject/ray:2.50.1-py310
               command: ["/bin/bash", "-c"]
               args:
                 - |
                   echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
                   mkdir -p /tmp/pip-packages
-                  # Keep installing dependencies, but no pinning needed
                   pip install --no-cache-dir --target=/tmp/pip-packages vllm "transformers>=4.47.0" accelerate
                   echo "Installation complete!"
               volumeMounts:
@@ -205,8 +202,8 @@ spec:
 
           containers:
             - name: ray-worker
-              # UPDATED: Use the latest Ray image version
-              image: rayproject/ray:2.50.1
+              # UPDATED: Use Python 3.10 image
+              image: rayproject/ray:2.50.1-py310
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
