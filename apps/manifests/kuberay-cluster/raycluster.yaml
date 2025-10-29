@@ -163,8 +163,8 @@ spec:
   # Worker group - MAXIMIZED for 235B models at BF16
   workerGroupSpecs:
     - groupName: ai-workers
-      # CHANGED: 2 workers (one per non-control-plane node)
-      replicas: 2
+      # TEMPORARY: 1 worker while fixing transformers (talos-dmt-nnk is resource-constrained)
+      replicas: 1
       minReplicas: 0
       maxReplicas: 2
       
@@ -206,19 +206,19 @@ spec:
                 - mountPath: /models
                   name: model-storage
             
-            # NEW: Install transformers persistently
+            # NEW: Install transformers persistently to shared volume
             - name: install-transformers
               image: rayproject/ray:2.30.0
               command: ["/bin/bash", "-c"]
               args:
                 - |
-                  echo "Installing transformers and dependencies..."
-                  pip install --no-cache-dir transformers>=4.47.0 accelerate
-                  echo "Installation complete!"
-                  touch /tmp/transformers-installed
+                  echo "Installing transformers to shared volume..."
+                  pip install --target=/pip-packages --no-cache-dir transformers>=4.47.0 accelerate
+                  echo "Installation complete! Installed packages:"
+                  ls -la /pip-packages/ | head -20
               volumeMounts:
-                - mountPath: /tmp
-                  name: ray-temp
+                - mountPath: /pip-packages
+                  name: pip-packages
           
           containers:
             - name: ray-worker
@@ -231,10 +231,10 @@ spec:
               resources:
                 limits:
                   cpu: "60"         # Maximum CPU per worker
-                  memory: "250Gi"   # Increased to use more of node's 252GB
+                  memory: "220Gi"   # Increased to use more of node's 252GB
                 requests:
                   cpu: "55"         # Request slightly lower
-                  memory: "240Gi"   # Request slightly lower
+                  memory: "220Gi"   # Request slightly lower
               
               ports:
                 - containerPort: 8080
@@ -258,6 +258,9 @@ spec:
               
               # Environment optimizations for large AI models
               env:
+                # Python path to find installed packages
+                - name: PYTHONPATH
+                  value: "/pip-packages"
                 # Memory management
                 - name: RAY_memory_monitor_refresh_ms
                   value: "250"
@@ -286,6 +289,8 @@ spec:
               
               # Volume mounts
               volumeMounts:
+                - name: pip-packages
+                  mountPath: /pip-packages
                 - name: dshm
                   mountPath: /dev/shm
                 - name: ray-temp
@@ -294,6 +299,9 @@ spec:
                   mountPath: /models
           
           volumes:
+            - name: pip-packages
+              emptyDir:
+                sizeLimit: 10Gi
             - name: dshm
               emptyDir:
                 medium: Memory
