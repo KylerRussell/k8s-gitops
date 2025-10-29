@@ -25,19 +25,18 @@ spec:
         cpu: "500m"
         memory: "512Mi"
   
-  # Head node - minimal resources, control plane only
+  # Head node - NOW CONFIGURED AS A WORKER
   headGroupSpec:
     serviceType: ClusterIP
     
     rayStartParams:
       dashboard-host: "0.0.0.0"
-      # CRITICAL: Set to "0" to prevent task scheduling on head
-      num-cpus: "0"
-      # Head memory - enough for GCS and dashboard
-      memory: "32212254720"  # 30GB in bytes
+      # CRITICAL: Set to a non-zero value to enable scheduling
+      num-cpus: "55"
+      # Memory parameters aligned with worker nodes
+      memory: "246960619520"  # 230Gi in bytes
       metrics-export-port: "8080"
-      # Object store MUST be less than /dev/shm size
-      object-store-memory: "17179869184"  # 16GB (leaving 4GB headroom from 20GB shm)
+      object-store-memory: "128849018880"  # 120Gi
     
     template:
       metadata:
@@ -45,7 +44,6 @@ spec:
           component: ray-head
           workload: distributed-ai
       spec:
-        # Node affinity to spread across servers
         affinity:
           podAntiAffinity:
             preferredDuringSchedulingIgnoredDuringExecution:
@@ -60,6 +58,8 @@ spec:
                           - ray-worker
                   topologyKey: kubernetes.io/hostname
         
+        # NOTE: Using an initContainer for dependencies is not recommended.
+        # Building a custom image is more reliable and efficient.
         initContainers:
           - name: fix-permissions
             image: busybox
@@ -71,36 +71,46 @@ spec:
             volumeMounts:
               - mountPath: /models
                 name: model-storage
-        
+          # ADDED: initContainer to install dependencies on the head node
+          - name: install-transformers
+            image: rayproject/ray:2.30.0
+            command: ["/bin/bash", "-c"]
+            args:
+              - |
+                echo "Installing transformers and dependencies on head..."
+                pip install --no-cache-dir transformers>=4.47.0 accelerate
+                echo "Installation complete!"
+                touch /tmp/transformers-installed
+            volumeMounts:
+              - mountPath: /tmp
+                name: ray-temp
+
         containers:
           - name: ray-head
+            # RECOMMENDED: Replace with your own custom image
+            # Example: image: your-repo/ray-with-deps:latest
             image: rayproject/ray:2.30.0
             imagePullPolicy: IfNotPresent
             
-            # Head resources - control plane operations
+            # Head resources - now maximized for computation
             resources:
               limits:
-                cpu: "8"
-                memory: "32Gi"
+                cpu: "60"
+                memory: "230Gi" # SAFER: Reduced to leave buffer for OS
               requests:
-                cpu: "4"
-                memory: "16Gi"
+                cpu: "55"
+                memory: "230Gi" # SAFER: Reduced to avoid scheduling failure
             
             ports:
               - containerPort: 6379
                 name: gcs
-                protocol: TCP
               - containerPort: 8265
                 name: dashboard
-                protocol: TCP
               - containerPort: 10001
                 name: client
-                protocol: TCP
               - containerPort: 8080
                 name: metrics
-                protocol: TCP
             
-            # Health checks
             livenessProbe:
               httpGet:
                 path: /api/version
@@ -118,62 +128,58 @@ spec:
               periodSeconds: 10
               timeoutSeconds: 5
             
-            # Graceful shutdown
             lifecycle:
               preStop:
                 exec:
                   command: ["/bin/sh", "-c", "ray stop"]
             
-            # Environment for monitoring integration
             env:
               - name: RAY_GRAFANA_HOST
                 value: "http://grafana.monitoring.svc:3000"
               - name: RAY_PROMETHEUS_HOST
                 value: "http://prometheus.monitoring.svc:9090"
-              # Memory management for large models
               - name: RAY_memory_monitor_refresh_ms
                 value: "250"
-              # Allow object store to use standard filesystem if needed
               - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
                 value: "1"
-              # Hugging Face cache location
               - name: HF_HOME
                 value: "/models/.cache/huggingface"
               - name: TRANSFORMERS_CACHE
                 value: "/models/.cache/huggingface/transformers"
             
-            # Volume mounts
             volumeMounts:
               - name: dshm
                 mountPath: /dev/shm
               - name: model-storage
                 mountPath: /models
-        
+              # ADDED: Volume for spilling
+              - name: ray-temp
+                mountPath: /tmp/ray
+
         volumes:
           - name: dshm
             emptyDir:
               medium: Memory
-              sizeLimit: 20Gi
-          # Persistent storage for AI models (uses local disk)
+              sizeLimit: 150Gi # Increased to match workers
           - name: model-storage
             hostPath:
               path: /var/lib/models
               type: DirectoryOrCreate
+          # ADDED: Volume for spilling
+          - name: ray-temp
+            emptyDir:
+              sizeLimit: 100Gi
 
-  # Worker group - MAXIMIZED for 235B models at BF16
+  # Worker group - 2 replicas to make a 3-node total cluster
   workerGroupSpecs:
     - groupName: ai-workers
-      # TEMPORARY: 1 worker while fixing transformers (talos-dmt-nnk is resource-constrained)
-      replicas: 1
-      minReplicas: 0
+      replicas: 2
+      minReplicas: 0 # Can scale down to 0 workers (head remains)
       maxReplicas: 2
       
       rayStartParams:
-        # Workers use full resources - auto-detected from limits
         metrics-export-port: "8080"
-        # Object store for computation (tensors, intermediate results)
-        # Increased to 120GB per worker for large model inference
-        object-store-memory: "128849018880"  # 120GB (leaving 30GB headroom from 150GB shm)
+        object-store-memory: "128849018880"  # 120Gi
       
       template:
         metadata:
@@ -182,7 +188,6 @@ spec:
             workload: distributed-ai
             model-inference: "enabled"
         spec:
-          # CRITICAL: Spread workers across different nodes
           affinity:
             podAntiAffinity:
               requiredDuringSchedulingIgnoredDuringExecution:
@@ -205,43 +210,38 @@ spec:
               volumeMounts:
                 - mountPath: /models
                   name: model-storage
-            
-            # NEW: Install transformers persistently to shared volume
             - name: install-transformers
               image: rayproject/ray:2.30.0
               command: ["/bin/bash", "-c"]
               args:
                 - |
-                  echo "Installing transformers to shared volume..."
-                  pip install --target=/pip-packages --no-cache-dir transformers>=4.47.0 accelerate
-                  echo "Installation complete! Installed packages:"
-                  ls -la /pip-packages/ | head -20
+                  echo "Installing transformers and dependencies on worker..."
+                  pip install --no-cache-dir transformers>=4.47.0 accelerate
+                  echo "Installation complete!"
+                  touch /tmp/transformers-installed
               volumeMounts:
-                - mountPath: /pip-packages
-                  name: pip-packages
+                - mountPath: /tmp
+                  name: ray-temp
           
           containers:
             - name: ray-worker
+              # RECOMMENDED: Replace with your own custom image
+              # Example: image: your-repo/ray-with-deps:latest
               image: rayproject/ray:2.30.0
               imagePullPolicy: IfNotPresent
               
-              # MAXIMIZED resources for 235B model at BF16 (~470GB)
-              # Each worker: 60 cores, 240GB RAM
-              # 2 workers = 120 cores, 480GB RAM total
               resources:
                 limits:
-                  cpu: "60"         # Maximum CPU per worker
-                  memory: "220Gi"   # Increased to use more of node's 252GB
+                  cpu: "60"
+                  memory: "230Gi"   # SAFER: Reduced to leave buffer for OS
                 requests:
-                  cpu: "55"         # Request slightly lower
-                  memory: "220Gi"   # Request slightly lower
+                  cpu: "55"
+                  memory: "230Gi"   # SAFER: Reduced to avoid scheduling failure
               
               ports:
                 - containerPort: 8080
                   name: metrics
-                  protocol: TCP
               
-              # Health monitoring
               livenessProbe:
                 tcpSocket:
                   port: 8080
@@ -250,47 +250,32 @@ spec:
                 timeoutSeconds: 10
                 failureThreshold: 5
               
-              # Graceful shutdown with extended timeout for large models
               lifecycle:
                 preStop:
                   exec:
                     command: ["/bin/sh", "-c", "ray stop"]
               
-              # Environment optimizations for large AI models
               env:
-                # Python path to find installed packages
-                - name: PYTHONPATH
-                  value: "/pip-packages"
-                # Memory management
                 - name: RAY_memory_monitor_refresh_ms
                   value: "250"
-                # Object spilling to disk for memory pressure
                 - name: RAY_object_spilling_config
                   value: '{"type":"filesystem","params":{"directory_path":"/tmp/ray"}}'
-                # Optimize for large objects (model weights)
                 - name: RAY_max_direct_call_object_size
-                  value: "100000000"  # 100MB
-                # Plasma store configuration
+                  value: "100000000"
                 - name: RAY_plasma_store_socket_name
                   value: "/tmp/ray/plasma_store"
-                # Allow slow storage as fallback
                 - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
                   value: "1"
-                # Hugging Face cache on persistent storage
                 - name: HF_HOME
                   value: "/models/.cache/huggingface"
                 - name: TRANSFORMERS_CACHE
                   value: "/models/.cache/huggingface/transformers"
-                # PyTorch optimizations
                 - name: OMP_NUM_THREADS
                   value: "60"
                 - name: MKL_NUM_THREADS
                   value: "60"
               
-              # Volume mounts
               volumeMounts:
-                - name: pip-packages
-                  mountPath: /pip-packages
                 - name: dshm
                   mountPath: /dev/shm
                 - name: ray-temp
@@ -299,18 +284,13 @@ spec:
                   mountPath: /models
           
           volumes:
-            - name: pip-packages
-              emptyDir:
-                sizeLimit: 10Gi
             - name: dshm
               emptyDir:
                 medium: Memory
-                # 150GB shared memory per worker for large tensors
                 sizeLimit: 150Gi
             - name: ray-temp
               emptyDir:
-                sizeLimit: 100Gi  # Spillover storage for large models
-            # Persistent storage for AI models (shared across workers)
+                sizeLimit: 100Gi
             - name: model-storage
               hostPath:
                 path: /var/lib/models
