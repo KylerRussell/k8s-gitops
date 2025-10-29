@@ -18,17 +18,15 @@ spec:
       requests:
         cpu: "500m"
         memory: "512Mi"
-  
-  # Head node - NOW CONFIGURED AS A WORKER
+
   headGroupSpec:
     serviceType: ClusterIP
     rayStartParams:
       dashboard-host: "0.0.0.0"
       num-cpus: "55"
-      memory: "236223201280"  # 220Gi in bytes (220*1024*1024*1024)
+      memory: "236223201280" # 220Gi in bytes (220*1024*1024*1024)
       metrics-export-port: "8080"
-      object-store-memory: "128849018880"  # 120Gi
-    
+      object-store-memory: "128849018880" # 120Gi
     template:
       metadata:
         labels:
@@ -48,18 +46,18 @@ spec:
                           - ray-head
                           - ray-worker
                   topologyKey: kubernetes.io/hostname
-        
+
         initContainers:
           - name: fix-permissions
             image: busybox
             command: ["sh", "-c"]
             args:
               - |
-                mkdir -p /models/.cache/huggingface &&
-                chmod -R 777 /models
+                mkdir -p /models/.cache/huggingface && chmod -R 777 /models
             volumeMounts:
               - mountPath: /models
                 name: model-storage
+
           - name: install-transformers
             image: rayproject/ray:2.30.0
             command: ["/bin/bash", "-c"]
@@ -67,7 +65,7 @@ spec:
               - |
                 echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
                 mkdir -p /tmp/pip-packages
-                pip install --no-cache-dir --target=/tmp/pip-packages vllm transformers>=4.47.0 accelerate
+                pip install --no-cache-dir --target=/tmp/pip-packages vllm "transformers>=4.47.0" accelerate
                 echo "Installation complete!"
             volumeMounts:
               - mountPath: /tmp
@@ -80,11 +78,10 @@ spec:
             resources:
               limits:
                 cpu: "60"
-                memory: "220Gi" # SAFER: Reduced to 220Gi
+                memory: "220Gi"
               requests:
                 cpu: "55"
-                memory: "220Gi" # SAFER: Reduced to 220Gi
-            
+                memory: "220Gi"
             ports:
               - containerPort: 6379
                 name: gcs
@@ -94,7 +91,6 @@ spec:
                 name: client
               - containerPort: 8080
                 name: metrics
-            
             livenessProbe:
               httpGet:
                 path: /api/version
@@ -103,7 +99,6 @@ spec:
               periodSeconds: 30
               timeoutSeconds: 10
               failureThreshold: 3
-            
             readinessProbe:
               httpGet:
                 path: /api/version
@@ -111,12 +106,10 @@ spec:
               initialDelaySeconds: 15
               periodSeconds: 10
               timeoutSeconds: 5
-            
             lifecycle:
               preStop:
                 exec:
                   command: ["/bin/sh", "-c", "ray stop"]
-            
             env:
               - name: PYTHONPATH
                 value: "/tmp/ray/pip-packages"
@@ -132,7 +125,6 @@ spec:
                 value: "/models/.cache/huggingface"
               - name: TRANSFORMERS_CACHE
                 value: "/models/.cache/huggingface/transformers"
-            
             volumeMounts:
               - name: dshm
                 mountPath: /dev/shm
@@ -154,17 +146,14 @@ spec:
             emptyDir:
               sizeLimit: 100Gi
 
-  # Worker group
   workerGroupSpecs:
     - groupName: ai-workers
       replicas: 2
       minReplicas: 0
       maxReplicas: 2
-      
       rayStartParams:
         metrics-export-port: "8080"
-        object-store-memory: "128849018880"  # 120Gi
-      
+        object-store-memory: "128849018880" # 120Gi
       template:
         metadata:
           labels:
@@ -189,11 +178,11 @@ spec:
               command: ["sh", "-c"]
               args:
                 - |
-                  mkdir -p /models/.cache/huggingface &&
-                  chmod -R 777 /models
+                  mkdir -p /models/.cache/huggingface && chmod -R 777 /models
               volumeMounts:
                 - mountPath: /models
                   name: model-storage
+
             - name: install-transformers
               image: rayproject/ray:2.30.0
               command: ["/bin/bash", "-c"]
@@ -201,12 +190,12 @@ spec:
                 - |
                   echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
                   mkdir -p /tmp/pip-packages
-                  pip install --no-cache-dir --target=/tmp/pip-packages vllm transformers>=4.47.0 accelerate
+                  pip install --no-cache-dir --target=/tmp/pip-packages vllm "transformers>=4.47.0" accelerate
                   echo "Installation complete!"
-            volumeMounts:
-              - mountPath: /tmp
-                name: ray-temp
-          
+              volumeMounts:
+                - mountPath: /tmp
+                  name: ray-temp
+
           containers:
             - name: ray-worker
               image: rayproject/ray:2.30.0
@@ -214,15 +203,13 @@ spec:
               resources:
                 limits:
                   cpu: "60"
-                  memory: "220Gi"   # SAFER: Reduced to 220Gi
+                  memory: "220Gi"
                 requests:
                   cpu: "55"
-                  memory: "220Gi"   # SAFER: Reduced to 220Gi
-              
+                  memory: "220Gi"
               ports:
                 - containerPort: 8080
                   name: metrics
-              
               livenessProbe:
                 tcpSocket:
                   port: 8080
@@ -230,12 +217,10 @@ spec:
                 periodSeconds: 30
                 timeoutSeconds: 10
                 failureThreshold: 5
-              
               lifecycle:
                 preStop:
                   exec:
                     command: ["/bin/sh", "-c", "ray stop"]
-              
               env:
                 - name: PYTHONPATH
                   value: "/tmp/ray/pip-packages"
@@ -257,7 +242,6 @@ spec:
                   value: "60"
                 - name: MKL_NUM_THREADS
                   value: "60"
-              
               volumeMounts:
                 - name: dshm
                   mountPath: /dev/shm
@@ -265,7 +249,7 @@ spec:
                   mountPath: /tmp/ray
                 - name: model-storage
                   mountPath: /models
-          
+
           volumes:
             - name: dshm
               emptyDir:
