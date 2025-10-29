@@ -60,7 +60,6 @@ spec:
             volumeMounts:
               - mountPath: /models
                 name: model-storage
-          # UPDATED: Added 'vllm' to the pip install command
           - name: install-transformers
             image: rayproject/ray:2.30.0
             command: ["/bin/bash", "-c"]
@@ -193,7 +192,6 @@ spec:
               volumeMounts:
                 - mountPath: /models
                   name: model-storage
-            # UPDATED: Added 'vllm' to the pip install command
             - name: install-transformers
               image: rayproject/ray:2.30.0
               command: ["/bin/bash", "-c"]
@@ -244,4 +242,36 @@ spec:
                 - name: RAY_max_direct_call_object_size
                   value: "100000000"
                 - name: RAY_plasma_store_socket_name
-                  value: "/tmp/ray/plasma
+                  value: "/tmp/ray/plasma_store"
+                - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
+                  value: "1"
+                # --- THIS IS THE FIX ---
+                - name: HF_HOME
+                  value: "/models/.cache/huggingface" # <-- Corrected typo
+                - name: TRANSFORMERS_CACHE
+                  value: "/models/.cache/huggingface/transformers"
+                - name: OMP_NUM_THREADS
+                  value: "60"
+                - name: MKL_NUM_THREADS
+                  value: "60"
+              
+              volumeMounts:
+                - name: dshm
+                  mountPath: /dev/shm
+                - name: ray-temp
+                  mountPath: /tmp/ray
+                - name: model-storage
+                  mountPath: /models
+          
+          volumes:
+            - name: dshm
+              emptyDir:
+                medium: Memory
+                sizeLimit: 150Gi
+            - name: ray-temp
+              emptyDir:
+                sizeLimit: 100Gi
+            - name: model-storage
+              hostPath:
+                path: /var/lib/models
+                type: DirectoryOrCreate
