@@ -69,7 +69,7 @@ spec:
                 pip install --no-cache-dir --target=/tmp/ray/pip-packages vllm "transformers>=4.47.0" accelerate
                 echo "Installation complete!"
             volumeMounts:
-              - mountPath: /tmp
+              - mountPath: /tmp/ray
                 name: ray-temp
 
         containers:
@@ -197,7 +197,7 @@ spec:
                   pip install --no-cache-dir --target=/tmp/ray/pip-packages vllm "transformers>=4.47.0" accelerate
                   echo "Installation complete!"
               volumeMounts:
-                - mountPath: /tmp
+                - mountPath: /tmp/ray
                   name: ray-temp
 
           containers:
