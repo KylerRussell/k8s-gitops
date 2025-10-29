@@ -65,7 +65,11 @@ spec:
               - |
                 echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
                 mkdir -p /tmp/pip-packages
+                # Install vllm first
                 pip install --no-cache-dir --target=/tmp/pip-packages vllm "transformers>=4.47.0" accelerate
+                # NOW, pin opentelemetry to the versions Ray Dashboard needs
+                echo "Pinning opentelemetry versions for Ray Dashboard..."
+                pip install --no-cache-dir --target=/tmp/pip-packages "opentelemetry-api==1.19.0" "opentelemetry-sdk==1.19.0" "opentelemetry-exporter-otlp-proto-grpc==1.19.0"
                 echo "Installation complete!"
             volumeMounts:
               - mountPath: /tmp
@@ -190,7 +194,11 @@ spec:
                 - |
                   echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
                   mkdir -p /tmp/pip-packages
+                  # Install vllm first
                   pip install --no-cache-dir --target=/tmp/pip-packages vllm "transformers>=4.47.0" accelerate
+                  # NOW, pin opentelemetry to the versions Ray Dashboard needs
+                  echo "Pinning opentelemetry versions for Ray Dashboard..."
+                  pip install --no-cache-dir --target=/tmp/pip-packages "opentelemetry-api==1.19.0" "opentelemetry-sdk==1.19.0" "opentelemetry-exporter-otlp-proto-grpc==1.19.0"
                   echo "Installation complete!"
               volumeMounts:
                 - mountPath: /tmp
