@@ -60,7 +60,6 @@ spec:
             volumeMounts:
               - mountPath: /models
                 name: model-storage
-          # UPDATED: Installs packages to a shared volume
           - name: install-transformers
             image: rayproject/ray:2.30.0
             command: ["/bin/bash", "-c"]
@@ -119,7 +118,6 @@ spec:
                   command: ["/bin/sh", "-c", "ray stop"]
             
             env:
-              # ADDED: Tells Python to look for packages in our shared volume
               - name: PYTHONPATH
                 value: "/tmp/ray/pip-packages"
               - name: RAY_GRAFANA_HOST
@@ -160,7 +158,7 @@ spec:
   workerGroupSpecs:
     - groupName: ai-workers
       replicas: 2
-      minReSplicas: 0
+      minReplicas: 0 # <-- THIS IS THE FIX
       maxReplicas: 2
       
       rayStartParams:
@@ -196,7 +194,6 @@ spec:
               volumeMounts:
                 - mountPath: /models
                   name: model-storage
-            # UPDATED: Installs packages to a shared volume
             - name: install-transformers
               image: rayproject/ray:2.30.0
               command: ["/bin/bash", "-c"]
@@ -240,7 +237,6 @@ spec:
                     command: ["/bin/sh", "-c", "ray stop"]
               
               env:
-                # ADDED: Tells Python to look for packages in our shared volume
                 - name: PYTHONPATH
                   value: "/tmp/ray/pip-packages"
                 - name: RAY_memory_monitor_refresh_ms
@@ -251,6 +247,7 @@ spec:
                   value: "100000000"
                 - name: RAY_plasma_store_socket_name
                   value: "/tmp/ray/plasma_store"
+Other: 
                 - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
                   value: "1"
                 - name: HF_HOME
