@@ -64,9 +64,9 @@ spec:
             command: ["/bin/bash", "-c"]
             args:
               - |
-                echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
+                echo "Installing transformers and accelerate to shared volume /tmp/pip-packages..."
                 mkdir -p /tmp/ray/pip-packages
-                pip install --no-cache-dir --target=/tmp/ray/pip-packages vllm "transformers>=4.47.0" accelerate
+                pip install --no-cache-dir --target=/tmp/ray/pip-packages "transformers>=4.47.0" accelerate torch
                 echo "Installation complete!"
             volumeMounts:
               - mountPath: /tmp/ray
@@ -192,9 +192,9 @@ spec:
               command: ["/bin/bash", "-c"]
               args:
                 - |
-                  echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
+                  echo "Installing transformers and accelerate to shared volume /tmp/pip-packages..."
                   mkdir -p /tmp/ray/pip-packages
-                  pip install --no-cache-dir --target=/tmp/ray/pip-packages vllm "transformers>=4.47.0" accelerate
+                  pip install --no-cache-dir --target=/tmp/ray/pip-packages "transformers>=4.47.0" accelerate torch
                   echo "Installation complete!"
               volumeMounts:
                 - mountPath: /tmp/ray
