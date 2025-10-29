@@ -65,8 +65,8 @@ spec:
             args:
               - |
                 echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
-                mkdir -p /tmp/pip-packages
-                pip install --no-cache-dir --target=/tmp/pip-packages vllm "transformers>=4.47.0" accelerate
+                mkdir -p /tmp/ray/pip-packages
+                pip install --no-cache-dir --target=/tmp/ray/pip-packages vllm "transformers>=4.47.0" accelerate
                 echo "Installation complete!"
             volumeMounts:
               - mountPath: /tmp
@@ -193,8 +193,8 @@ spec:
               args:
                 - |
                   echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
-                  mkdir -p /tmp/pip-packages
-                  pip install --no-cache-dir --target=/tmp/pip-packages vllm "transformers>=4.47.0" accelerate
+                  mkdir -p /tmp/ray/pip-packages
+                  pip install --no-cache-dir --target=/tmp/ray/pip-packages vllm "transformers>=4.47.0" accelerate
                   echo "Installation complete!"
               volumeMounts:
                 - mountPath: /tmp
