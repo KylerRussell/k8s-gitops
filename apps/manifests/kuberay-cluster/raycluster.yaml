@@ -60,15 +60,16 @@ spec:
             volumeMounts:
               - mountPath: /models
                 name: model-storage
+          # UPDATED: Installs packages to a shared volume
           - name: install-transformers
             image: rayproject/ray:2.30.0
             command: ["/bin/bash", "-c"]
             args:
               - |
-                echo "Installing vllm, transformers, and dependencies on head..."
-                pip install --no-cache-dir vllm transformers>=4.47.0 accelerate
+                echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
+                mkdir -p /tmp/pip-packages
+                pip install --no-cache-dir --target=/tmp/pip-packages vllm transformers>=4.47.0 accelerate
                 echo "Installation complete!"
-                touch /tmp/transformers-installed
             volumeMounts:
               - mountPath: /tmp
                 name: ray-temp
@@ -118,6 +119,9 @@ spec:
                   command: ["/bin/sh", "-c", "ray stop"]
             
             env:
+              # ADDED: Tells Python to look for packages in our shared volume
+              - name: PYTHONPATH
+                value: "/tmp/ray/pip-packages"
               - name: RAY_GRAFANA_HOST
                 value: "http://grafana.monitoring.svc:3000"
               - name: RAY_PROMETHEUS_HOST
@@ -156,7 +160,7 @@ spec:
   workerGroupSpecs:
     - groupName: ai-workers
       replicas: 2
-      minReplicas: 0
+      minReSplicas: 0
       maxReplicas: 2
       
       rayStartParams:
@@ -192,18 +196,19 @@ spec:
               volumeMounts:
                 - mountPath: /models
                   name: model-storage
+            # UPDATED: Installs packages to a shared volume
             - name: install-transformers
               image: rayproject/ray:2.30.0
               command: ["/bin/bash", "-c"]
               args:
                 - |
-                  echo "Installing vllm, transformers, and dependencies on worker..."
-                  pip install --no-cache-dir vllm transformers>=4.47.0 accelerate
+                  echo "Installing vllm, transformers to shared volume /tmp/pip-packages..."
+                  mkdir -p /tmp/pip-packages
+                  pip install --no-cache-dir --target=/tmp/pip-packages vllm transformers>=4.47.0 accelerate
                   echo "Installation complete!"
-                  touch /tmp/transformers-installed
-              volumeMounts:
-                - mountPath: /tmp
-                  name: ray-temp
+            volumeMounts:
+              - mountPath: /tmp
+                name: ray-temp
           
           containers:
             - name: ray-worker
@@ -235,6 +240,9 @@ spec:
                     command: ["/bin/sh", "-c", "ray stop"]
               
               env:
+                # ADDED: Tells Python to look for packages in our shared volume
+                - name: PYTHONPATH
+                  value: "/tmp/ray/pip-packages"
                 - name: RAY_memory_monitor_refresh_ms
                   value: "250"
                 - name: RAY_object_spilling_config
@@ -245,9 +253,8 @@ spec:
                   value: "/tmp/ray/plasma_store"
                 - name: RAY_OBJECT_STORE_ALLOW_SLOW_STORAGE
                   value: "1"
-                # --- THIS IS THE FIX ---
                 - name: HF_HOME
-                  value: "/models/.cache/huggingface" # <-- Corrected typo
+                  value: "/models/.cache/huggingface"
                 - name: TRANSFORMERS_CACHE
                   value: "/models/.cache/huggingface/transformers"
                 - name: OMP_NUM_THREADS
