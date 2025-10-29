@@ -71,6 +71,7 @@ spec:
             volumeMounts:
               - mountPath: /models
                 name: model-storage
+        
         containers:
           - name: ray-head
             image: rayproject/ray:2.30.0
@@ -158,14 +159,14 @@ spec:
             hostPath:
               path: /var/lib/models
               type: DirectoryOrCreate
-  
+
   # Worker group - MAXIMIZED for 235B models at BF16
   workerGroupSpecs:
     - groupName: ai-workers
-      # Start with 3 workers for large models (235B needs ~470GB)
-      replicas: 3
+      # CHANGED: 2 workers (one per non-control-plane node)
+      replicas: 2
       minReplicas: 0
-      maxReplicas: 3
+      maxReplicas: 2
       
       rayStartParams:
         # Workers use full resources - auto-detected from limits
@@ -192,6 +193,7 @@ spec:
                         values:
                           - ray-worker
                   topologyKey: kubernetes.io/hostname
+
           initContainers:
             - name: fix-permissions
               image: busybox
@@ -203,6 +205,20 @@ spec:
               volumeMounts:
                 - mountPath: /models
                   name: model-storage
+            
+            # NEW: Install transformers persistently
+            - name: install-transformers
+              image: rayproject/ray:2.30.0
+              command: ["/bin/bash", "-c"]
+              args:
+                - |
+                  echo "Installing transformers and dependencies..."
+                  pip install --no-cache-dir transformers>=4.47.0 accelerate
+                  echo "Installation complete!"
+                  touch /tmp/transformers-installed
+              volumeMounts:
+                - mountPath: /tmp
+                  name: ray-temp
           
           containers:
             - name: ray-worker
@@ -211,7 +227,7 @@ spec:
               
               # MAXIMIZED resources for 235B model at BF16 (~470GB)
               # Each worker: 60 cores, 240GB RAM
-              # 3 workers = 180 cores, 720GB RAM total
+              # 2 workers = 120 cores, 480GB RAM total
               resources:
                 limits:
                   cpu: "60"         # Maximum CPU per worker
