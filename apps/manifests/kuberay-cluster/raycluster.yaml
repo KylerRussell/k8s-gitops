@@ -63,10 +63,18 @@ spec:
             command: ["/bin/bash", "-c"]
             args:
               - |
-                echo "Installing vllm, transformers, and accelerate to shared volume /tmp/pip-packages..."
+                echo "Installing vllm, transformers, and pinning Ray versions..."
                 mkdir -p /tmp/ray/pip-packages
-                # UPDATED: Added 'vllm' back into your install list
-                pip install --no-cache-dir --target=/tmp/ray/pip-packages vllm "numpy<2.0" "transformers>=4.47.0" accelerate torch
+                # UPDATED: Added pins for all ray components to match base image
+                pip install --no-cache-dir --target=/tmp/ray/pip-packages \
+                  vllm \
+                  "ray==2.50.1" \
+                  "ray-core==2.50.1" \
+                  "ray-dashboard==2.50.1" \
+                  "numpy<2.0" \
+                  "transformers>=4.47.0" \
+                  accelerate \
+                  torch
                 echo "Installation complete!"
             volumeMounts:
               - mountPath: /tmp/ray
@@ -190,10 +198,18 @@ spec:
               command: ["/bin/bash", "-c"]
               args:
                 - |
-                  echo "Installing vllm, transformers, and accelerate to shared volume /tmp/pip-packages..."
+                  echo "Installing vllm, transformers, and pinning Ray versions..."
                   mkdir -p /tmp/ray/pip-packages
-                  # UPDATED: Added 'vllm' back into your install list
-                  pip install --no-cache-dir --target=/tmp/ray/pip-packages vllm "numpy<2.0" "transformers>=4.47.0" accelerate torch
+                  # UPDATED: Added pins for all ray components to match base image
+                  pip install --no-cache-dir --target=/tmp/ray/pip-packages \
+                    vllm \
+                    "ray==2.50.1" \
+                    "ray-core==2.50.1" \
+                    "ray-dashboard==2.50.1" \
+                    "numpy<2.0" \
+                    "transformers>=4.47.0" \
+                    accelerate \
+                    torch
                   echo "Installation complete!"
               volumeMounts:
                 - mountPath: /tmp/ray
