@@ -76,10 +76,11 @@ spec:
                   "opentelemetry-exporter-otlp>=1.26.0,<1.27.0" \
                   "opentelemetry-semantic-conventions-ai>=0.4.1,<0.5.0"
                 
-                echo "[2/3] Installing PyTorch and numpy..."
+                echo "[2/3] Installing PyTorch, torchvision, and numpy..."
                 pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                   --timeout 300 --retries 5 \
                   "torch>=2.1.0" \
+                  "torchvision>=0.16.0" \
                   "numpy<2.0"
                 
                 echo "[3/3] Installing vllm, transformers, and accelerate..."
@@ -233,10 +234,11 @@ spec:
                     "opentelemetry-exporter-otlp>=1.26.0,<1.27.0" \
                     "opentelemetry-semantic-conventions-ai>=0.4.1,<0.5.0"
                   
-                  echo "[2/3] Installing PyTorch and numpy..."
+                  echo "[2/3] Installing PyTorch, torchvision, and numpy..."
                   pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                     --timeout 300 --retries 5 \
                     "torch>=2.1.0" \
+                    "torchvision>=0.16.0" \
                     "numpy<2.0"
                   
                   echo "[3/3] Installing vllm, transformers, and accelerate..."
