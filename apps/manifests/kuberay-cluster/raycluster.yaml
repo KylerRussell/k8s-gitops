@@ -23,6 +23,7 @@ spec:
     serviceType: ClusterIP
     rayStartParams:
       dashboard-host: "0.0.0.0"
+      include-dashboard: "false"  # Disable dashboard to avoid OpenTelemetry conflict
       num-cpus: "55"
       memory: "236223201280" # 220Gi in bytes
       metrics-export-port: "8080"
@@ -63,24 +64,25 @@ spec:
             command: ["/bin/bash", "-c"]
             args:
               - |
-                echo "Installing all dependencies with complex pinning..."
+                echo "Installing dependencies with vllm-compatible OpenTelemetry versions..."
                 mkdir -p /tmp/ray/pip-packages
-                # This command pins everything:
-                # 1. vllm (what you need)
-                # 2. ray==2.50.1 (to fix version mismatch)
-                # 3. numpy<2.0 (to fix scipy/numpy conflict)
-                # 4. opentelemetry*==1.19.0 (to fix dashboard crash)
+                # Install compatible versions:
+                # 1. vllm 0.8.3 (stable version with flexible dependencies)
+                # 2. OpenTelemetry 1.26.x (compatible with vllm, not Ray Dashboard)
+                # 3. numpy<2.0 (scipy compatibility)
+                # Note: Dashboard is disabled to avoid conflict
                 pip install --no-cache-dir --target=/tmp/ray/pip-packages \
-                  vllm \
-                  "ray==2.50.1" \
-                  "numpy<2.0" \
-                  "opentelemetry-api==1.19.0" \
-                  "opentelemetry-sdk==1.19.0" \
-                  "opentelemetry-exporter-otlp-proto-grpc==1.19.0" \
-                  "transformers>=4.47.0" \
-                  accelerate \
-                  torch
+                  "opentelemetry-sdk>=1.26.0,<1.27.0" \
+                  "opentelemetry-api>=1.26.0,<1.27.0" \
+                  "opentelemetry-exporter-otlp>=1.26.0,<1.27.0" \
+                  "opentelemetry-semantic-conventions-ai>=0.4.1,<0.5.0" \
+                  "vllm==0.8.3" \
+                  "accelerate>=0.25.0" \
+                  "transformers>=4.36.0" \
+                  "torch>=2.1.0" \
+                  "numpy<2.0"
                 echo "Installation complete!"
+                pip list --path=/tmp/ray/pip-packages | grep -E '(vllm|opentelemetry|transformers|accelerate)'
             volumeMounts:
               - mountPath: /tmp/ray
                 name: ray-temp
@@ -107,16 +109,16 @@ spec:
                 name: metrics
             livenessProbe:
               httpGet:
-                path: /api/version
-                port: 8265
+                path: /metrics
+                port: 8080
               initialDelaySeconds: 30
               periodSeconds: 30
               timeoutSeconds: 10
               failureThreshold: 5
             readinessProbe:
               httpGet:
-                path: /api/version
-                port: 8265
+                path: /metrics
+                port: 8080
               initialDelaySeconds: 20
               periodSeconds: 10
               timeoutSeconds: 5
@@ -203,20 +205,21 @@ spec:
               command: ["/bin/bash", "-c"]
               args:
                 - |
-                  echo "Installing all dependencies with complex pinning..."
+                  echo "Installing dependencies with vllm-compatible OpenTelemetry versions..."
                   mkdir -p /tmp/ray/pip-packages
-                  # This command pins everything:
+                  # Install compatible versions for workers
                   pip install --no-cache-dir --target=/tmp/ray/pip-packages \
-                    vllm \
-                    "ray==2.50.1" \
-                    "numpy<2.0" \
-                    "opentelemetry-api==1.19.0" \
-                    "opentelemetry-sdk==1.19.0" \
-                    "opentelemetry-exporter-otlp-proto-grpc==1.19.0" \
-                    "transformers>=4.47.0" \
-                    accelerate \
-                    torch
+                    "opentelemetry-sdk>=1.26.0,<1.27.0" \
+                    "opentelemetry-api>=1.26.0,<1.27.0" \
+                    "opentelemetry-exporter-otlp>=1.26.0,<1.27.0" \
+                    "opentelemetry-semantic-conventions-ai>=0.4.1,<0.5.0" \
+                    "vllm==0.8.3" \
+                    "accelerate>=0.25.0" \
+                    "transformers>=4.36.0" \
+                    "torch>=2.1.0" \
+                    "numpy<2.0"
                   echo "Installation complete!"
+                  pip list --path=/tmp/ray/pip-packages | grep -E '(vllm|opentelemetry|transformers|accelerate)'
               volumeMounts:
                 - mountPath: /tmp/ray
                   name: ray-temp
