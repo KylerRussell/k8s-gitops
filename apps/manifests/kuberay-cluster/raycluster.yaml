@@ -63,14 +63,12 @@ spec:
             command: ["/bin/bash", "-c"]
             args:
               - |
-                echo "Installing vllm, transformers, and pinning Ray versions..."
+                echo "Installing vllm, transformers, and pinning numpy/ray versions..."
                 mkdir -p /tmp/ray/pip-packages
-                # UPDATED: Added pins for all ray components to match base image
+                # UPDATED: Added vllm and pinned ray==2.50.1
                 pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                   vllm \
                   "ray==2.50.1" \
-                  "ray-core==2.50.1" \
-                  "ray-dashboard==2.50.1" \
                   "numpy<2.0" \
                   "transformers>=4.47.0" \
                   accelerate \
@@ -198,14 +196,12 @@ spec:
               command: ["/bin/bash", "-c"]
               args:
                 - |
-                  echo "Installing vllm, transformers, and pinning Ray versions..."
+                  echo "Installing vllm, transformers, and pinning numpy/ray versions..."
                   mkdir -p /tmp/ray/pip-packages
-                  # UPDATED: Added pins for all ray components to match base image
+                  # UPDATED: Added vllm and pinned ray==2.50.1
                   pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                     vllm \
                     "ray==2.50.1" \
-                    "ray-core==2.50.1" \
-                    "ray-dashboard==2.50.1" \
                     "numpy<2.0" \
                     "transformers>=4.47.0" \
                     accelerate \
