@@ -94,6 +94,11 @@ spec:
                   "accelerate>=0.25.0" \
                   "transformers>=4.36.0"
                 
+                # CRITICAL: Remove any ray packages that got installed as dependencies
+                # This prevents conflicts with the system Ray installation
+                echo "Cleaning up: removing ray packages from pip-packages..."
+                rm -rf /tmp/ray/pip-packages/ray /tmp/ray/pip-packages/ray-* 2>/dev/null || true
+                
                 echo "Installation complete!"
                 pip list --path=/tmp/ray/pip-packages | grep -E '(vllm|opentelemetry|transformers|accelerate|torch)'
             volumeMounts:
@@ -247,6 +252,11 @@ spec:
                     "vllm==0.8.3" \
                     "accelerate>=0.25.0" \
                     "transformers>=4.36.0"
+                  
+                  # CRITICAL: Remove any ray packages that got installed as dependencies
+                  # This prevents conflicts with the system Ray installation
+                  echo "Cleaning up: removing ray packages from pip-packages..."
+                  rm -rf /tmp/ray/pip-packages/ray /tmp/ray/pip-packages/ray-* 2>/dev/null || true
                   
                   echo "Installation complete!"
                   pip list --path=/tmp/ray/pip-packages | grep -E '(vllm|opentelemetry|transformers|accelerate|torch)'
