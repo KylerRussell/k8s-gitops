@@ -63,13 +63,20 @@ spec:
             command: ["/bin/bash", "-c"]
             args:
               - |
-                echo "Installing vllm, transformers, and pinning numpy/ray versions..."
+                echo "Installing all dependencies with complex pinning..."
                 mkdir -p /tmp/ray/pip-packages
-                # UPDATED: Added vllm and pinned ray==2.50.1
+                # This command pins everything:
+                # 1. vllm (what you need)
+                # 2. ray==2.50.1 (to fix version mismatch)
+                # 3. numpy<2.0 (to fix scipy/numpy conflict)
+                # 4. opentelemetry*==1.19.0 (to fix dashboard crash)
                 pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                   vllm \
                   "ray==2.50.1" \
                   "numpy<2.0" \
+                  "opentelemetry-api==1.19.0" \
+                  "opentelemetry-sdk==1.19.0" \
+                  "opentelemetry-exporter-otlp-proto-grpc==1.19.0" \
                   "transformers>=4.47.0" \
                   accelerate \
                   torch
@@ -196,13 +203,16 @@ spec:
               command: ["/bin/bash", "-c"]
               args:
                 - |
-                  echo "Installing vllm, transformers, and pinning numpy/ray versions..."
+                  echo "Installing all dependencies with complex pinning..."
                   mkdir -p /tmp/ray/pip-packages
-                  # UPDATED: Added vllm and pinned ray==2.50.1
+                  # This command pins everything:
                   pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                     vllm \
                     "ray==2.50.1" \
                     "numpy<2.0" \
+                    "opentelemetry-api==1.19.0" \
+                    "opentelemetry-sdk==1.19.0" \
+                    "opentelemetry-exporter-otlp-proto-grpc==1.19.0" \
                     "transformers>=4.47.0" \
                     accelerate \
                     torch
