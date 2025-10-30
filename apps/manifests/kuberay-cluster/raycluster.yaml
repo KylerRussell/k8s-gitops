@@ -66,7 +66,7 @@ spec:
               - |
                 echo "Installing transformers and accelerate to shared volume /tmp/pip-packages..."
                 mkdir -p /tmp/ray/pip-packages
-                pip install --no-cache-dir --target=/tmp/ray/pip-packages "transformers>=4.47.0" accelerate torch
+                pip install --no-cache-dir --target=/tmp/ray/pip-packages "numpy<2.0" "transformers>=4.47.0" accelerate torch
                 echo "Installation complete!"
             volumeMounts:
               - mountPath: /tmp/ray
@@ -194,7 +194,7 @@ spec:
                 - |
                   echo "Installing transformers and accelerate to shared volume /tmp/pip-packages..."
                   mkdir -p /tmp/ray/pip-packages
-                  pip install --no-cache-dir --target=/tmp/ray/pip-packages "transformers>=4.47.0" accelerate torch
+                  pip install --no-cache-dir --target=/tmp/ray/pip-packages "numpy<2.0" "transformers>=4.47.0" accelerate torch
                   echo "Installation complete!"
               volumeMounts:
                 - mountPath: /tmp/ray
