@@ -59,14 +59,14 @@ spec:
                 name: model-storage
 
           - name: install-transformers
-            # UPDATED: Use Python 3.10 image
             image: rayproject/ray:2.50.1-py310
             command: ["/bin/bash", "-c"]
             args:
               - |
-                echo "Installing transformers and accelerate to shared volume /tmp/pip-packages..."
+                echo "Installing vllm, transformers, and accelerate to shared volume /tmp/pip-packages..."
                 mkdir -p /tmp/ray/pip-packages
-                pip install --no-cache-dir --target=/tmp/ray/pip-packages "numpy<2.0" "transformers>=4.47.0" accelerate torch
+                # UPDATED: Added 'vllm' back into your install list
+                pip install --no-cache-dir --target=/tmp/ray/pip-packages vllm "numpy<2.0" "transformers>=4.47.0" accelerate torch
                 echo "Installation complete!"
             volumeMounts:
               - mountPath: /tmp/ray
@@ -74,7 +74,6 @@ spec:
 
         containers:
           - name: ray-head
-            # UPDATED: Use Python 3.10 image
             image: rayproject/ray:2.50.1-py310
             imagePullPolicy: IfNotPresent
             resources:
@@ -187,14 +186,14 @@ spec:
                   name: model-storage
 
             - name: install-transformers
-              # UPDATED: Use Python 3.10 image
               image: rayproject/ray:2.50.1-py310
               command: ["/bin/bash", "-c"]
               args:
                 - |
-                  echo "Installing transformers and accelerate to shared volume /tmp/pip-packages..."
+                  echo "Installing vllm, transformers, and accelerate to shared volume /tmp/pip-packages..."
                   mkdir -p /tmp/ray/pip-packages
-                  pip install --no-cache-dir --target=/tmp/ray/pip-packages "numpy<2.0" "transformers>=4.47.0" accelerate torch
+                  # UPDATED: Added 'vllm' back into your install list
+                  pip install --no-cache-dir --target=/tmp/ray/pip-packages vllm "numpy<2.0" "transformers>=4.47.0" accelerate torch
                   echo "Installation complete!"
               volumeMounts:
                 - mountPath: /tmp/ray
@@ -202,7 +201,6 @@ spec:
 
           containers:
             - name: ray-worker
-              # UPDATED: Use Python 3.10 image
               image: rayproject/ray:2.50.1-py310
               imagePullPolicy: IfNotPresent
               resources:
