@@ -107,7 +107,6 @@ spec:
                 rm -rf /tmp/ray/pip-packages/opentelemetry* 2>/dev/null || true
                 
                 echo "Installation complete!"
-            # ADDED: Resource limits for the build process
             resources:
               limits:
                 cpu: "4"
@@ -281,17 +280,16 @@ spec:
                   rm -rf /tmp/ray/pip-packages/opentelemetry* 2>/dev/null || true
                   
                   echo "Installation complete!"
-            # ADDED: Resource limits for the build process
-            resources:
-              limits:
-                cpu: "4"
-                memory: "8Gi"
+              resources:
+                limits:
+                  cpu: "4"
+                  memory: "8Gi"
               requests:
                 cpu: "2"
                 memory: "4Gi"
-            volumeMounts:
-              - mountPath: /tmp/ray
-                name: ray-temp
+              volumeMounts:
+                - mountPath: /tmp/ray
+                  name: ray-temp
 
           containers:
             - name: ray-worker
