@@ -63,6 +63,7 @@ spec:
             command: ["/bin/bash", "-c"]
             args:
               - |
+                set -e
                 echo "Installing dependencies for vllm compatibility..."
                 mkdir -p /tmp/ray/pip-packages
                 export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
@@ -93,9 +94,13 @@ spec:
                 
                 export VLLM_TARGET_DEVICE=cpu
                 
-                # Install CPU-specific requirements
-                pip install --no-cache-dir --target=/tmp/ray/pip-packages -r requirements/cpu.txt
+                # Install CPU-specific requirements, *filtering out* the problematic torch line
+                echo "Filtering and installing CPU requirements..."
+                grep -v "torch==" requirements/cpu.txt > /tmp/cpu_reqs_no_torch.txt
+                pip install --no-cache-dir --target=/tmp/ray/pip-packages -r /tmp/cpu_reqs_no_torch.txt
+                
                 # Build and install vLLM from source
+                echo "Building vLLM..."
                 pip install --no-cache-dir --target=/tmp/ray/pip-packages .
                 
                 echo "vLLM build complete. Cleaning up build directory..."
@@ -199,7 +204,6 @@ spec:
       replicas: 2
       minReplicas: 2
       maxReplicas: 2
-      numOfHosts: 1
       rayStartParams:
         metrics-export-port: "8080"
         object-store-memory: "128849018880" # 120Gi
@@ -237,6 +241,7 @@ spec:
               command: ["/bin/bash", "-c"]
               args:
                 - |
+                  set -e
                   echo "Installing dependencies for vllm compatibility..."
                   mkdir -p /tmp/ray/pip-packages
                   export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
@@ -267,9 +272,13 @@ spec:
                   
                   export VLLM_TARGET_DEVICE=cpu
                   
-                  # Install CPU-specific requirements
-                  pip install --no-cache-dir --target=/tmp/ray/pip-packages -r requirements/cpu.txt
+                  # Install CPU-specific requirements, *filtering out* the problematic torch line
+                  echo "Filtering and installing CPU requirements..."
+                  grep -v "torch==" requirements/cpu.txt > /tmp/cpu_reqs_no_torch.txt
+                  pip install --no-cache-dir --target=/tmp/ray/pip-packages -r /tmp/cpu_reqs_no_torch.txt
+                  
                   # Build and install vLLM from source
+                  echo "Building vLLM..."
                   pip install --no-cache-dir --target=/tmp/ray/pip-packages .
                   
                   echo "vLLM build complete. Cleaning up build directory..."
@@ -306,7 +315,6 @@ spec:
               ports:
                 - containerPort: 8080
                   name: metrics
-                  protocol: TCP
               livenessProbe:
                 tcpSocket:
                   port: 8080
