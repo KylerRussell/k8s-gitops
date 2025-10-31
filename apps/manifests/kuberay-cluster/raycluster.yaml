@@ -199,6 +199,7 @@ spec:
       replicas: 2
       minReplicas: 2
       maxReplicas: 2
+      num_hosts: 1
       rayStartParams:
         metrics-export-port: "8080"
         object-store-memory: "128849018880" # 120Gi
@@ -305,6 +306,7 @@ spec:
               ports:
                 - containerPort: 8080
                   name: metrics
+                  protocol: TCP
               livenessProbe:
                 tcpSocket:
                   port: 8080
