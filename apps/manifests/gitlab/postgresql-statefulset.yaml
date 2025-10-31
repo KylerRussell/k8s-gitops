@@ -1,0 +1,58 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: gitlab-postgresql
+  namespace: gitlab
+spec:
+  serviceName: gitlab-postgresql
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab-postgresql
+  template:
+    metadata:
+      labels:
+        app: gitlab-postgresql
+    spec:
+      containers:
+      - name: postgresql
+        image: postgres:14
+        ports:
+        - containerPort: 5432
+          name: postgres
+        env:
+        - name: POSTGRES_USER
+          valueFrom:
+            secretKeyRef:
+              name: gitlab-postgresql
+              key: username
+        - name: POSTGRES_PASSWORD
+          valueFrom:
+            secretKeyRef:
+              name: gitlab-postgresql
+              key: password
+        - name: POSTGRES_DB
+          valueFrom:
+            secretKeyRef:
+              name: gitlab-postgresql
+              key: database
+        - name: PGDATA
+          value: /var/lib/postgresql/data/pgdata
+        volumeMounts:
+        - name: postgresql-data
+          mountPath: /var/lib/postgresql/data
+        resources:
+          requests:
+            memory: "512Mi"
+            cpu: "250m"
+          limits:
+            memory: "2Gi"
+            cpu: "1000m"
+  volumeClaimTemplates:
+  - metadata:
+      name: postgresql-data
+    spec:
+      accessModes: [ "ReadWriteOnce" ]
+      resources:
+        requests:
+          storage: 20Gi

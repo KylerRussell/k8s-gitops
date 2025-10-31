@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: gitlab-redis
+  namespace: gitlab
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: gitlab-redis
+  template:
+    metadata:
+      labels:
+        app: gitlab-redis
+    spec:
+      containers:
+      - name: redis
+        image: redis:7-alpine
+        ports:
+        - containerPort: 6379
+          name: redis
+        command:
+        - redis-server
+        - --appendonly
+        - "yes"
+        volumeMounts:
+        - name: redis-data
+          mountPath: /data
+        resources:
+          requests:
+            memory: "256Mi"
+            cpu: "100m"
+          limits:
+            memory: "1Gi"
+            cpu: "500m"
+      volumes:
+      - name: redis-data
+        persistentVolumeClaim:
+          claimName: gitlab-redis-data
+---
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: gitlab-redis-data
+  namespace: gitlab
+spec:
+  accessModes:
+  - ReadWriteOnce
+  resources:
+    requests:
+      storage: 5Gi

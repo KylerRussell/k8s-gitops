@@ -1,0 +1,19 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: gitlab
+resources:
+# Sealed Secrets (create these first with create-sealed-secrets.sh)
+- postgresql-sealedsecret.yaml
+- gitlab-sealedsecret.yaml
+# Storage
+- gitlab-pvcs.yaml
+# Database
+- postgresql-statefulset.yaml
+- postgresql-service.yaml
+# Cache
+- redis-deployment.yaml
+- redis-service.yaml
+# GitLab Application
+- gitlab-deployment.yaml
+- gitlab-service.yaml
+- gitlab-ingress.yaml
