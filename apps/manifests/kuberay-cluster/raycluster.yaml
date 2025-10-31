@@ -64,6 +64,10 @@ spec:
             args:
               - |
                 set -e
+                
+                echo "Installing build tools..."
+                apt-get update && apt-get install -y g++ build-essential
+                
                 echo "Installing dependencies for vLLM (CPU-only build)..."
                 mkdir -p /tmp/ray/pip-packages
                 export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
@@ -239,6 +243,10 @@ spec:
               args:
                 - |
                   set -e
+                  
+                  echo "Installing build tools..."
+                  apt-get update && apt-get install -y g++ build-essential
+                  
                   echo "Installing dependencies for vLLM (CPU-only build)..."
                   mkdir -p /tmp/ray/pip-packages
                   export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
