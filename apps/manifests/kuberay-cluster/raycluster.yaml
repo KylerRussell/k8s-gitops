@@ -70,7 +70,7 @@ spec:
 
                 # Step 1: Uninstall any existing Torch to prevent conflicts
                 echo "Uninstalling existing torch..."
-                pip uninstall -y torch torchvision torchaudio
+                pip uninstall -y torch torchvision torchaudio || true
 
                 # Step 2: Install CPU-ONLY PyTorch from the official CPU index
                 echo "Installing CPU-only PyTorch..."
@@ -231,7 +231,7 @@ spec:
 
                   # Step 1: Uninstall any existing Torch to prevent conflicts
                   echo "Uninstalling existing torch..."
-                  pip uninstall -y torch torchvision torchaudio
+                  pip uninstall -y torch torchvision torchaudio || true
   
                   # Step 2: Install CPU-ONLY PyTorch from the official CPU index
                   echo "Installing CPU-only PyTorch..."
