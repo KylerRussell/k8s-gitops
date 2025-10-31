@@ -92,7 +92,7 @@ spec:
                 # Step 4: Clean up conflicting packages
                 echo "Cleaning up conflicting packages..."
                 rm -rf /tmp/ray/pip-packages/ray /tmp/ray/pip-packages/ray-* 2>/dev/null || true
-                rm -rf /tmp/ray/pip-packages/opentelemetry_api* 2>/dev/null || true
+                rm -rf /tmp/ray/pip-packages/opentelemetry* 2>/dev/null || true
                 
                 echo "Installation complete!"
             resources:
@@ -253,7 +253,7 @@ spec:
                   # Step 4: Clean up conflicting packages
                   echo "Cleaning up conflicting packages..."
                   rm -rf /tmp/ray/pip-packages/ray /tmp/ray/pip-packages/ray-* 2>/dev/null || true
-                  rm -rf /tmp/ray/pip-packages/opentelemetry_api* 2>/dev/null || true
+                  rm -rf /tmp/ray/pip-packages/opentelemetry* 2>/dev/null || true
                   
                   echo "Installation complete!"
               resources:
