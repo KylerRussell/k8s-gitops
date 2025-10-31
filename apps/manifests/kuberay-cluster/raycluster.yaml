@@ -1,4 +1,3 @@
-# Rerun build 2025-11-01
 apiVersion: ray.io/v1
 kind: RayCluster
 metadata:
@@ -65,52 +64,35 @@ spec:
             args:
               - |
                 set -e
-                echo "Installing dependencies for vllm compatibility..."
+                echo "Installing dependencies for vLLM (CPU-only)..."
                 mkdir -p /tmp/ray/pip-packages
                 export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
 
-                echo "[1/4] Installing OpenTelemetry (temporary)..."
+                # Step 1: Uninstall any existing Torch to prevent conflicts
+                echo "Uninstalling existing torch..."
+                pip uninstall -y torch torchvision torchaudio
+
+                # Step 2: Install CPU-ONLY PyTorch from the official CPU index
+                echo "Installing CPU-only PyTorch..."
                 pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                   --timeout 300 --retries 5 \
-                  "opentelemetry-sdk>=1.26.0,<1.27.0" \
-                  "opentelemetry-api>=1.26.0,<1.27.0" \
-                  "opentelemetry-exporter-otlp>=1.26.0,<1.27.0" \
-                  "opentelemetry-semantic-conventions-ai>=0.4.1,<0.5.0"
-                
-                echo "[2/4] Installing PyTorch, build tools, and other deps..."
+                  --extra-index-url https://download.pytorch.org/whl/cpu \
+                  "torch>=2.1.0" "torchvision>=0.16.0"
+
+                # Step 3: Install the latest vLLM and other deps
+                echo "Installing vLLM and other dependencies..."
                 pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                   --timeout 300 --retries 5 \
-                  "torch>=2.1.0" \
-                  "torchvision>=0.16.0" \
+                  "vllm" \
                   "numpy<2.0" \
-                  "cmake>=3.26" \
-                  "ninja" \
                   "accelerate>=0.25.0" \
-                  "transformers>=4.36.0"
+                  "transformers>=4.36.0" \
+                  "opentelemetry-sdk>=1.26.0,<1.27.0"
 
-                echo "[3/4] Cloning and building vLLM for CPU from source..."
-                BUILD_DIR=$(mktemp -d)
-                git clone https://github.com/vllm-project/vllm.git "$BUILD_DIR"
-                
-                # Run all build commands in a subshell to guarantee working directory
-                ( \
-                    echo "Entering build directory $BUILD_DIR..." && \
-                    cd "$BUILD_DIR" && \
-                    export VLLM_TARGET_DEVICE=cpu && \
-                    echo "Filtering and installing CPU requirements..." && \
-                    grep -v "torch==" requirements/cpu.txt > requirements/cpu_reqs_no_torch.txt && \
-                    pip install --no-cache-dir --target=/tmp/ray/pip-packages -r requirements/cpu_reqs_no_torch.txt && \
-                    echo "Building vLLM..." && \
-                    pip install --no-cache-dir --target=/tmp/ray/pip-packages . \
-                )
-                
-                echo "vLLM build complete. Cleaning up build directory..."
-                cd /
-                rm -rf "$BUILD_DIR"
-
-                echo "[4/4] Cleaning up conflicting packages..."
+                # Step 4: Clean up conflicting packages
+                echo "Cleaning up conflicting packages..."
                 rm -rf /tmp/ray/pip-packages/ray /tmp/ray/pip-packages/ray-* 2>/dev/null || true
-                rm -rf /tmp/ray/pip-packages/opentelemetry* 2>/dev/null || true
+                rm -rf /tmp/ray/pip-packages/opentelemetry_api* 2>/dev/null || true
                 
                 echo "Installation complete!"
             resources:
@@ -243,52 +225,35 @@ spec:
               args:
                 - |
                   set -e
-                  echo "Installing dependencies for vllm compatibility..."
+                  echo "Installing dependencies for vLLM (CPU-only)..."
                   mkdir -p /tmp/ray/pip-packages
                   export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
 
-                  echo "[1/4] Installing OpenTelemetry (temporary)..."
+                  # Step 1: Uninstall any existing Torch to prevent conflicts
+                  echo "Uninstalling existing torch..."
+                  pip uninstall -y torch torchvision torchaudio
+  
+                  # Step 2: Install CPU-ONLY PyTorch from the official CPU index
+                  echo "Installing CPU-only PyTorch..."
                   pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                     --timeout 300 --retries 5 \
-                    "opentelemetry-sdk>=1.26.0,<1.27.0" \
-                    "opentelemetry-api>=1.26.0,<1.27.0" \
-                    "opentelemetry-exporter-otlp>=1.26.0,<1.27.0" \
-                    "opentelemetry-semantic-conventions-ai>=0.4.1,<0.5.0"
-                  
-                  echo "[2/4] Installing PyTorch, build tools, and other deps..."
+                    --extra-index-url https://download.pytorch.org/whl/cpu \
+                    "torch>=2.1.0" "torchvision>=0.16.0"
+  
+                  # Step 3: Install the latest vLLM and other deps
+                  echo "Installing vLLM and other dependencies..."
                   pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                     --timeout 300 --retries 5 \
-                    "torch>=2.1.0" \
-                    "torchvision>=0.16.0" \
+                    "vllm" \
                     "numpy<2.0" \
-                    "cmake>=3.26" \
-                    "ninja" \
                     "accelerate>=0.25.0" \
-                    "transformers>=4.36.0"
-
-                  echo "[3/4] Cloning and building vLLM for CPU from source..."
-                  BUILD_DIR=$(mktemp -d)
-                  git clone https://github.com/vllm-project/vllm.git "$BUILD_DIR"
-                  
-                  # Run all build commands in a subshell to guarantee working directory
-                  ( \
-                      echo "Entering build directory $BUILD_DIR..." && \
-                      cd "$BUILD_DIR" && \
-                      export VLLM_TARGET_DEVICE=cpu && \
-                      echo "Filtering and installing CPU requirements..." && \
-                      grep -v "torch==" requirements/cpu.txt > requirements/cpu_reqs_no_torch.txt && \
-                      pip install --no-cache-dir --target=/tmp/ray/pip-packages -r requirements/cpu_reqs_no_torch.txt && \
-                      echo "Building vLLM..." && \
-                      pip install --no-cache-dir --target=/tmp/ray/pip-packages . \
-                  )
-                  
-                  echo "vLLM build complete. Cleaning up build directory..."
-                  cd /
-                  rm -rf "$BUILD_DIR"
-                  
-                  echo "[4/4] Cleaning up conflicting packages..."
+                    "transformers>=4.36.0" \
+                    "opentelemetry-sdk>=1.26.0,<1.27.0"
+  
+                  # Step 4: Clean up conflicting packages
+                  echo "Cleaning up conflicting packages..."
                   rm -rf /tmp/ray/pip-packages/ray /tmp/ray/pip-packages/ray-* 2>/dev/null || true
-                  rm -rf /tmp/ray/pip-packages/opentelemetry* 2>/dev/null || true
+                  rm -rf /tmp/ray/pip-packages/opentelemetry_api* 2>/dev/null || true
                   
                   echo "Installation complete!"
               resources:
