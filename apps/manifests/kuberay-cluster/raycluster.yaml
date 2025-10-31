@@ -1,3 +1,4 @@
+# Rerun build 2025-11-01
 apiVersion: ray.io/v1
 kind: RayCluster
 metadata:
