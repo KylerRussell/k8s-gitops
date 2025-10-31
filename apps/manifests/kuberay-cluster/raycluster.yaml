@@ -90,18 +90,18 @@ spec:
                 echo "[3/4] Cloning and building vLLM for CPU from source..."
                 BUILD_DIR=$(mktemp -d)
                 git clone https://github.com/vllm-project/vllm.git "$BUILD_DIR"
-                cd "$BUILD_DIR"
                 
-                export VLLM_TARGET_DEVICE=cpu
-                
-                # Install CPU-specific requirements, *filtering out* the problematic torch line
-                echo "Filtering and installing CPU requirements..."
-                grep -v "torch==" requirements/cpu.txt > /tmp/cpu_reqs_no_torch.txt
-                pip install --no-cache-dir --target=/tmp/ray/pip-packages -r /tmp/cpu_reqs_no_torch.txt
-                
-                # Build and install vLLM from source
-                echo "Building vLLM..."
-                pip install --no-cache-dir --target=/tmp/ray/pip-packages .
+                # Run all build commands in a subshell to guarantee working directory
+                ( \
+                    echo "Entering build directory $BUILD_DIR..." && \
+                    cd "$BUILD_DIR" && \
+                    export VLLM_TARGET_DEVICE=cpu && \
+                    echo "Filtering and installing CPU requirements..." && \
+                    grep -v "torch==" requirements/cpu.txt > requirements/cpu_reqs_no_torch.txt && \
+                    pip install --no-cache-dir --target=/tmp/ray/pip-packages -r requirements/cpu_reqs_no_torch.txt && \
+                    echo "Building vLLM..." && \
+                    pip install --no-cache-dir --target=/tmp/ray/pip-packages . \
+                )
                 
                 echo "vLLM build complete. Cleaning up build directory..."
                 cd /
@@ -268,18 +268,18 @@ spec:
                   echo "[3/4] Cloning and building vLLM for CPU from source..."
                   BUILD_DIR=$(mktemp -d)
                   git clone https://github.com/vllm-project/vllm.git "$BUILD_DIR"
-                  cd "$BUILD_DIR"
                   
-                  export VLLM_TARGET_DEVICE=cpu
-                  
-                  # Install CPU-specific requirements, *filtering out* the problematic torch line
-                  echo "Filtering and installing CPU requirements..."
-                  grep -v "torch==" requirements/cpu.txt > /tmp/cpu_reqs_no_torch.txt
-                  pip install --no-cache-dir --target=/tmp/ray/pip-packages -r /tmp/cpu_reqs_no_torch.txt
-                  
-                  # Build and install vLLM from source
-                  echo "Building vLLM..."
-                  pip install --no-cache-dir --target=/tmp/ray/pip-packages .
+                  # Run all build commands in a subshell to guarantee working directory
+                  ( \
+                      echo "Entering build directory $BUILD_DIR..." && \
+                      cd "$BUILD_DIR" && \
+                      export VLLM_TARGET_DEVICE=cpu && \
+                      echo "Filtering and installing CPU requirements..." && \
+                      grep -v "torch==" requirements/cpu.txt > requirements/cpu_reqs_no_torch.txt && \
+                      pip install --no-cache-dir --target=/tmp/ray/pip-packages -r requirements/cpu_reqs_no_torch.txt && \
+                      echo "Building vLLM..." && \
+                      pip install --no-cache-dir --target=/tmp/ray/pip-packages . \
+                  )
                   
                   echo "vLLM build complete. Cleaning up build directory..."
                   cd /
