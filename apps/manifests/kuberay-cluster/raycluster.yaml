@@ -86,7 +86,7 @@ spec:
                 echo "[3/3] Installing vllm, transformers, and accelerate..."
                 pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                   --timeout 300 --retries 5 \
-                  "vllm==0.8.3" \
+                  "vllm==0.7.1" \
                   "accelerate>=0.25.0" \
                   "transformers>=4.36.0"
                 
@@ -244,7 +244,7 @@ spec:
                   echo "[3/3] Installing vllm, transformers, and accelerate..."
                   pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                     --timeout 300 --retries 5 \
-                    "vllm==0.8.3" \
+                    "vllm==0.7.1" \
                     "accelerate>=0.25.0" \
                     "transformers>=4.36.0"
                   
