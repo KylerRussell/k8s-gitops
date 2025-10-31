@@ -60,6 +60,10 @@ spec:
 
           - name: install-transformers
             image: rayproject/ray:2.50.1-py310
+            # ADDED: Run this init container as root to allow apt-get
+            securityContext:
+              runAsUser: 0
+              runAsGroup: 0
             command: ["/bin/bash", "-c"]
             args:
               - |
@@ -239,6 +243,10 @@ spec:
 
             - name: install-transformers
               image: rayproject/ray:2.50.1-py310
+              # ADDED: Run this init container as root to allow apt-get
+              securityContext:
+                runAsUser: 0
+                runAsGroup: 0
               command: ["/bin/bash", "-c"]
               args:
                 - |
@@ -285,7 +293,7 @@ spec:
                   echo "vLLM build complete. Cleaning up build directory..."
                   cd /
                   rm -rf "$BUILD_DIR"
-
+                  
                   # Step 5: Clean up conflicting packages
                   echo "Cleaning up conflicting packages..."
                   rm -rf /tmp/ray/pip-packages/ray /tmp/ray/pip-packages/ray-* 2>/dev/null || true
