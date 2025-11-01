@@ -76,15 +76,14 @@ spec:
                 mkdir -p /tmp/ray/pip-packages
                 export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
 
-                # Step 1: Install build tools and dependencies
-                # We do NOT install torch/torchvision, as the base Ray image
-                # already has a CPU-only version. Re-installing it
-                # can pull a CUDA-enabled version by mistake.
-                echo "Installing build tools and python dependencies..."
+                # Step 1: Install Python build tools.
+                # We do NOT install torch, accelerate, or transformers,
+                # as the base Ray image already has CPU-only versions.
+                # Re-installing them pulls CUDA-enabled versions by mistake.
+                echo "Installing cmake and ninja..."
                 pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                   --timeout 300 --retries 5 \
-                  "numpy<2.0" "cmake>=3.26" "ninja" \
-                  "accelerate>=0.25.0" "transformers>=4.36.0"
+                  "cmake>=3.26" "ninja"
 
                 # Step 2: Clone vLLM
                 echo "Cloning vLLM..."
@@ -255,15 +254,14 @@ spec:
                   mkdir -p /tmp/ray/pip-packages
                   export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
 
-                  # Step 1: Install build tools and dependencies
-                  # We do NOT install torch/torchvision, as the base Ray image
-                  # already has a CPU-only version. Re-installing it
-                  # can pull a CUDA-enabled version by mistake.
-                  echo "Installing build tools and python dependencies..."
+                  # Step 1: Install Python build tools.
+                  # We do NOT install torch, accelerate, or transformers,
+                  # as the base Ray image already has CPU-only versions.
+                  # Re-installing them pulls CUDA-enabled versions by mistake.
+                  echo "Installing cmake and ninja..."
                   pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                     --timeout 300 --retries 5 \
-                    "numpy<2.0" "cmake>=3.26" "ninja" \
-                    "accelerate>=0.25.0" "transformers>=4.36.0"
+                    "cmake>=3.26" "ninja"
 
                   # Step 2: Clone vLLM
                   echo "Cloning vLLM..."
