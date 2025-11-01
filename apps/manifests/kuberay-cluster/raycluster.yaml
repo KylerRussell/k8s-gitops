@@ -6,7 +6,7 @@ metadata:
   labels:
     ray.io/cluster: distributed-ai-cluster
 spec:
-  rayVersion: "2.50.1"
+  # The rayVersion is now inherited from the container image.
   enableInTreeAutoscaling: false
   autoscalerOptions:
     idleTimeoutSeconds: 600
@@ -48,6 +48,7 @@ spec:
                   topologyKey: kubernetes.io/hostname
 
         initContainers:
+          # This container for setting up model storage permissions is retained.
           - name: fix-permissions
             image: busybox
             command: ["sh", "-c"]
@@ -58,69 +59,10 @@ spec:
               - mountPath: /models
                 name: model-storage
 
-          - name: install-transformers
-            image: rayproject/ray:2.50.1-py310
-            securityContext:
-              runAsUser: 0
-              runAsGroup: 0
-            command: ["/bin/bash", "-c"]
-            args:
-              - |
-                set -e
-                
-                echo "Installing build tools..."
-                apt-get update && apt-get install -y g++ build-essential
-                
-                echo "Installing cmake and ninja..."
-                mkdir -p /tmp/ray/pip-packages
-                export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
-                pip install --no-cache-dir --target=/tmp/ray/pip-packages \
-                  --timeout 300 --retries 5 \
-                  "cmake>=3.26" "ninja"
-
-                echo "Cloning vLLM..."
-                BUILD_DIR=$(mktemp -d)
-                git clone https://github.com/vllm-project/vllm.git "$BUILD_DIR"
-                
-                echo "Entering build directory $BUILD_DIR..."
-                cd "$BUILD_DIR"
-                export VLLM_TARGET_DEVICE=cpu
-                
-                # CRITICAL FIX:
-                # Install vLLM's CPU requirements *using the CPU-only torch index*.
-                # This forces sub-dependencies to also pick up the CPU-only torch.
-                echo "Installing vLLM CPU requirements..."
-                pip install --no-cache-dir --target=/tmp/ray/pip-packages \
-                  --extra-index-url https://download.pytorch.org/whl/cpu \
-                  -r requirements/cpu.txt
-
-                # Now that all dependencies are correctly installed, build vLLM.
-                echo "Building vLLM with --no-deps..."
-                pip install --no-deps --no-cache-dir --target=/tmp/ray/pip-packages .
-                
-                echo "vLLM build complete. Cleaning up build directory..."
-                cd /
-                rm -rf "$BUILD_DIR"
-                
-                echo "Cleaning up conflicting packages..."
-                rm -rf /tmp/ray/pip-packages/ray /tmp/ray/pip-packages/ray-* 2>/dev/null || true
-                rm -rf /tmp/ray/pip-packages/opentelemetry* 2>/dev/null || true
-                
-                echo "Installation complete!"
-            resources:
-              limits:
-                cpu: "4"
-                memory: "8Gi"
-              requests:
-                cpu: "2"
-                memory: "4Gi"
-            volumeMounts:
-              - mountPath: /tmp/ray
-                name: ray-temp
-
         containers:
           - name: ray-head
-            image: rayproject/ray:2.50.1-py310
+            # Using a pre-built image with Ray and vLLM for CPU.
+            image: openeuler/vllm-cpu:latest
             imagePullPolicy: IfNotPresent
             resources:
               limits:
@@ -159,8 +101,7 @@ spec:
                 exec:
                   command: ["/bin/sh", "-c", "ray stop"]
             env:
-              - name: PYTHONPATH
-                value: "/tmp/ray/pip-packages"
+              # PYTHONPATH is no longer needed as packages are in the system path.
               - name: RAY_GRAFANA_HOST
                 value: "http://grafana.monitoring.svc:3000"
               - name: RAY_PROMETHEUS_HOST
@@ -221,6 +162,7 @@ spec:
                   topologyKey: kubernetes.io/hostname
 
           initContainers:
+            # This container for setting up model storage permissions is retained.
             - name: fix-permissions
               image: busybox
               command: ["sh", "-c"]
@@ -231,69 +173,10 @@ spec:
                 - mountPath: /models
                   name: model-storage
 
-            - name: install-transformers
-              image: rayproject/ray:2.50.1-py310
-              securityContext:
-                runAsUser: 0
-                runAsGroup: 0
-              command: ["/bin/bash", "-c"]
-              args:
-                - |
-                  set -e
-                  
-                  echo "Installing build tools..."
-                  apt-get update && apt-get install -y g++ build-essential
-                  
-                  echo "Installing cmake and ninja..."
-                  mkdir -p /tmp/ray/pip-packages
-                  export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
-                  pip install --no-cache-dir --target=/tmp/ray/pip-packages \
-                    --timeout 300 --retries 5 \
-                    "cmake>=3.26" "ninja"
-
-                  echo "Cloning vLLM..."
-                  BUILD_DIR=$(mktemp -d)
-                  git clone https://github.com/vllm-project/vllm.git "$BUILD_DIR"
-                  
-                  echo "Entering build directory $BUILD_DIR..."
-                  cd "$BUILD_DIR"
-                  export VLLM_TARGET_DEVICE=cpu
-                  
-                  # CRITICAL FIX:
-                  # Install vLLM's CPU requirements *using the CPU-only torch index*.
-                  # This forces sub-dependencies to also pick up the CPU-only torch.
-                  echo "Installing vLLM CPU requirements..."
-                  pip install --no-cache-dir --target=/tmp/ray/pip-packages \
-                    --extra-index-url https://download.pytorch.org/whl/cpu \
-                    -r requirements/cpu.txt
-
-                  # Now that all dependencies are correctly installed, build vLLM.
-                  echo "Building vLLM with --no-deps..."
-                  pip install --no-deps --no-cache-dir --target=/tmp/ray/pip-packages .
-                  
-                  echo "vLLM build complete. Cleaning up build directory..."
-                  cd /
-                  rm -rf "$BUILD_DIR"
-                  
-                  echo "Cleaning up conflicting packages..."
-                  rm -rf /tmp/ray/pip-packages/ray /tmp/ray/pip-packages/ray-* 2>/dev/null || true
-                  rm -rf /tmp/ray/pip-packages/opentelemetry* 2>/dev/null || true
-                  
-                  echo "Installation complete!"
-              resources:
-                limits:
-                  cpu: "4"
-                  memory: "8Gi"
-                requests:
-                  cpu: "2"
-                  memory: "4Gi"
-              volumeMounts:
-                - mountPath: /tmp/ray
-                  name: ray-temp
-
           containers:
             - name: ray-worker
-              image: rayproject/ray:2.50.1-py310
+              # Using a pre-built image with Ray and vLLM for CPU.
+              image: openeuler/vllm-cpu:latest
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
@@ -317,8 +200,7 @@ spec:
                   exec:
                     command: ["/bin/sh", "-c", "ray stop"]
               env:
-                - name: PYTHONPATH
-                  value: "/tmp/ray/pip-packages"
+                # PYTHONPATH is no longer needed as packages are in the system path.
                 - name: RAY_memory_monitor_refresh_ms
                   value: "250"
                 - name: RAY_object_spilling_config
