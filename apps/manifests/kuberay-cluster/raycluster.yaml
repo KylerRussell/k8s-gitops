@@ -5,9 +5,6 @@ metadata:
   namespace: kuberay-system
   labels:
     ray.io/cluster: distributed-ai-cluster
-  annotations:
-    # This annotation is still needed to ensure our custom command is used.
-    ray.io/overwrite-container-cmd: "true"
 spec:
   enableInTreeAutoscaling: false
   autoscalerOptions:
@@ -62,12 +59,9 @@ spec:
 
         containers:
           - name: ray-head
-            image: openeuler/vllm-cpu:latest
+            # Using a purpose-built image for serving LLMs on Ray.
+            image: anyscale/ray-llm:latest
             imagePullPolicy: IfNotPresent
-            # Use a login shell (-l) to ensure the PATH is set correctly.
-            command: ["/bin/bash", "-lc", "--"]
-            args:
-              - "ulimit -n 65536; exec $KUBERAY_GEN_RAY_START_CMD"
             resources:
               limits:
                 cpu: "60"
@@ -177,12 +171,9 @@ spec:
 
           containers:
             - name: ray-worker
-              image: openeuler/vllm-cpu:latest
+              # Using a purpose-built image for serving LLMs on Ray.
+              image: anyscale/ray-llm:latest
               imagePullPolicy: IfNotPresent
-              # Use a login shell (-l) to ensure the PATH is set correctly.
-              command: ["/bin/bash", "-lc", "--"]
-              args:
-                - "ulimit -n 65536; exec $KUBERAY_GEN_RAY_START_CMD"
               resources:
                 limits:
                   cpu: "60"
