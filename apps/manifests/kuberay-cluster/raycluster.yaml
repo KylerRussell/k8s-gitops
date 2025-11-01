@@ -59,8 +59,8 @@ spec:
 
         containers:
           - name: ray-head
-            # Using a purpose-built image for serving LLMs on Ray.
-            image: anyscale/ray-llm:latest
+            # Using our custom-built image for HF accelerate on CPU
+            image: kylerrussell/ray-hf-cpu:latest
             imagePullPolicy: IfNotPresent
             resources:
               limits:
@@ -171,8 +171,8 @@ spec:
 
           containers:
             - name: ray-worker
-              # Using a purpose-built image for serving LLMs on Ray.
-              image: anyscale/ray-llm:latest
+              # Using our custom-built image for HF accelerate on CPU
+              image: kylerrussell/ray-hf-cpu:latest
               imagePullPolicy: IfNotPresent
               resources:
                 limits:
