@@ -76,26 +76,22 @@ spec:
                 mkdir -p /tmp/ray/pip-packages
                 export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
 
-                # Step 1: Uninstall any existing Torch to prevent conflicts
-                echo "Uninstalling existing torch..."
-                pip uninstall -y torch torchvision torchaudio || true
-
-                # Step 2: Install CPU-ONLY PyTorch and build tools
-                echo "Installing CPU-only PyTorch and build tools..."
+                # Step 1: Install build tools and dependencies
+                # We do NOT install torch/torchvision, as the base Ray image
+                # already has a CPU-only version. Re-installing it
+                # can pull a CUDA-enabled version by mistake.
+                echo "Installing build tools and python dependencies..."
                 pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                   --timeout 300 --retries 5 \
-                  --extra-index-url https://download.pytorch.org/whl/cpu \
-                  "torch>=2.1.0" "torchvision>=0.16.0" \
                   "numpy<2.0" "cmake>=3.26" "ninja" \
-                  "accelerate>=0.25.0" "transformers>=4.36.0" \
-                  "opentelemetry-sdk>=1.26.0,<1.27.0"
+                  "accelerate>=0.25.0" "transformers>=4.36.0"
 
-                # Step 3: Clone vLLM
+                # Step 2: Clone vLLM
                 echo "Cloning vLLM..."
                 BUILD_DIR=$(mktemp -d)
                 git clone https://github.com/vllm-project/vllm.git "$BUILD_DIR"
                 
-                # Step 4: Build and install vLLM from source
+                # Step 3: Build and install vLLM from source
                 ( \
                     echo "Entering build directory $BUILD_DIR..." && \
                     cd "$BUILD_DIR" && \
@@ -110,8 +106,8 @@ spec:
                 echo "vLLM build complete. Cleaning up build directory..."
                 cd /
                 rm -rf "$BUILD_DIR"
-
-                # Step 5: Clean up conflicting packages
+                
+                # Step 4: Clean up conflicting packages
                 echo "Cleaning up conflicting packages..."
                 rm -rf /tmp/ray/pip-packages/ray /tmp/ray/pip-packages/ray-* 2>/dev/null || true
                 rm -rf /tmp/ray/pip-packages/opentelemetry* 2>/dev/null || true
@@ -259,26 +255,22 @@ spec:
                   mkdir -p /tmp/ray/pip-packages
                   export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
 
-                  # Step 1: Uninstall any existing Torch to prevent conflicts
-                  echo "Uninstalling existing torch..."
-                  pip uninstall -y torch torchvision torchaudio || true
-
-                  # Step 2: Install CPU-ONLY PyTorch and build tools
-                  echo "Installing CPU-only PyTorch and build tools..."
+                  # Step 1: Install build tools and dependencies
+                  # We do NOT install torch/torchvision, as the base Ray image
+                  # already has a CPU-only version. Re-installing it
+                  # can pull a CUDA-enabled version by mistake.
+                  echo "Installing build tools and python dependencies..."
                   pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                     --timeout 300 --retries 5 \
-                    --extra-index-url https://download.pytorch.org/whl/cpu \
-                    "torch>=2.1.0" "torchvision>=0.16.0" \
                     "numpy<2.0" "cmake>=3.26" "ninja" \
-                    "accelerate>=0.25.0" "transformers>=4.36.0" \
-                    "opentelemetry-sdk>=1.26.0,<1.27.0"
+                    "accelerate>=0.25.0" "transformers>=4.36.0"
 
-                  # Step 3: Clone vLLM
+                  # Step 2: Clone vLLM
                   echo "Cloning vLLM..."
                   BUILD_DIR=$(mktemp -d)
                   git clone https://github.com/vllm-project/vllm.git "$BUILD_DIR"
                   
-                  # Step 4: Build and install vLLM from source
+                  # Step 3: Build and install vLLM from source
                   ( \
                       echo "Entering build directory $BUILD_DIR..." && \
                       cd "$BUILD_DIR" && \
@@ -294,7 +286,7 @@ spec:
                   cd /
                   rm -rf "$BUILD_DIR"
                   
-                  # Step 5: Clean up conflicting packages
+                  # Step 4: Clean up conflicting packages
                   echo "Cleaning up conflicting packages..."
                   rm -rf /tmp/ray/pip-packages/ray /tmp/ray/pip-packages/ray-* 2>/dev/null || true
                   rm -rf /tmp/ray/pip-packages/opentelemetry* 2>/dev/null || true
@@ -304,9 +296,9 @@ spec:
                 limits:
                   cpu: "4"
                   memory: "8Gi"
-              requests:
-                cpu: "2"
-                memory: "4Gi"
+                requests:
+                  cpu: "2"
+                  memory: "4Gi"
               volumeMounts:
                 - mountPath: /tmp/ray
                   name: ray-temp
