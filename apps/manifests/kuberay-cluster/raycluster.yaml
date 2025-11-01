@@ -60,7 +60,6 @@ spec:
 
           - name: install-transformers
             image: rayproject/ray:2.50.1-py310
-            # ADDED: Run this init container as root to allow apt-get
             securityContext:
               runAsUser: 0
               runAsGroup: 0
@@ -72,41 +71,37 @@ spec:
                 echo "Installing build tools..."
                 apt-get update && apt-get install -y g++ build-essential
                 
-                echo "Installing dependencies for vLLM (CPU-only build)..."
+                echo "Installing cmake and ninja..."
                 mkdir -p /tmp/ray/pip-packages
                 export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
-
-                # Step 1: Install Python build tools.
-                # We do NOT install torch, accelerate, or transformers,
-                # as the base Ray image already has CPU-only versions.
-                # Re-installing them pulls CUDA-enabled versions by mistake.
-                echo "Installing cmake and ninja..."
                 pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                   --timeout 300 --retries 5 \
                   "cmake>=3.26" "ninja"
 
-                # Step 2: Clone vLLM
                 echo "Cloning vLLM..."
                 BUILD_DIR=$(mktemp -d)
                 git clone https://github.com/vllm-project/vllm.git "$BUILD_DIR"
                 
-                # Step 3: Build and install vLLM from source
-                ( \
-                    echo "Entering build directory $BUILD_DIR..." && \
-                    cd "$BUILD_DIR" && \
-                    export VLLM_TARGET_DEVICE=cpu && \
-                    echo "Filtering and installing CPU requirements (skipping torch)..." && \
-                    grep -v "torch" requirements/cpu.txt > requirements/cpu_reqs_no_torch.txt && \
-                    pip install --no-cache-dir --target=/tmp/ray/pip-packages -r requirements/cpu_reqs_no_torch.txt && \
-                    echo "Building vLLM with --no-deps..." && \
-                    pip install --no-deps --no-cache-dir --target=/tmp/ray/pip-packages . \
-                )
+                echo "Entering build directory $BUILD_DIR..."
+                cd "$BUILD_DIR"
+                export VLLM_TARGET_DEVICE=cpu
+                
+                # CRITICAL FIX:
+                # Install vLLM's CPU requirements *using the CPU-only torch index*.
+                # This forces sub-dependencies to also pick up the CPU-only torch.
+                echo "Installing vLLM CPU requirements..."
+                pip install --no-cache-dir --target=/tmp/ray/pip-packages \
+                  --extra-index-url https://download.pytorch.org/whl/cpu \
+                  -r requirements/cpu.txt
+
+                # Now that all dependencies are correctly installed, build vLLM.
+                echo "Building vLLM with --no-deps..."
+                pip install --no-deps --no-cache-dir --target=/tmp/ray/pip-packages .
                 
                 echo "vLLM build complete. Cleaning up build directory..."
                 cd /
                 rm -rf "$BUILD_DIR"
                 
-                # Step 4: Clean up conflicting packages
                 echo "Cleaning up conflicting packages..."
                 rm -rf /tmp/ray/pip-packages/ray /tmp/ray/pip-packages/ray-* 2>/dev/null || true
                 rm -rf /tmp/ray/pip-packages/opentelemetry* 2>/dev/null || true
@@ -238,7 +233,6 @@ spec:
 
             - name: install-transformers
               image: rayproject/ray:2.50.1-py310
-              # ADDED: Run this init container as root to allow apt-get
               securityContext:
                 runAsUser: 0
                 runAsGroup: 0
@@ -250,41 +244,37 @@ spec:
                   echo "Installing build tools..."
                   apt-get update && apt-get install -y g++ build-essential
                   
-                  echo "Installing dependencies for vLLM (CPU-only build)..."
+                  echo "Installing cmake and ninja..."
                   mkdir -p /tmp/ray/pip-packages
                   export PYTHONPATH="/tmp/ray/pip-packages:$PYTHONPATH"
-
-                  # Step 1: Install Python build tools.
-                  # We do NOT install torch, accelerate, or transformers,
-                  # as the base Ray image already has CPU-only versions.
-                  # Re-installing them pulls CUDA-enabled versions by mistake.
-                  echo "Installing cmake and ninja..."
                   pip install --no-cache-dir --target=/tmp/ray/pip-packages \
                     --timeout 300 --retries 5 \
                     "cmake>=3.26" "ninja"
 
-                  # Step 2: Clone vLLM
                   echo "Cloning vLLM..."
                   BUILD_DIR=$(mktemp -d)
                   git clone https://github.com/vllm-project/vllm.git "$BUILD_DIR"
                   
-                  # Step 3: Build and install vLLM from source
-                  ( \
-                      echo "Entering build directory $BUILD_DIR..." && \
-                      cd "$BUILD_DIR" && \
-                      export VLLM_TARGET_DEVICE=cpu && \
-                      echo "Filtering and installing CPU requirements (skipping torch)..." && \
-                      grep -v "torch" requirements/cpu.txt > requirements/cpu_reqs_no_torch.txt && \
-                      pip install --no-cache-dir --target=/tmp/ray/pip-packages -r requirements/cpu_reqs_no_torch.txt && \
-                      echo "Building vLLM with --no-deps..." && \
-                      pip install --no-deps --no-cache-dir --target=/tmp/ray/pip-packages . \
-                  )
+                  echo "Entering build directory $BUILD_DIR..."
+                  cd "$BUILD_DIR"
+                  export VLLM_TARGET_DEVICE=cpu
+                  
+                  # CRITICAL FIX:
+                  # Install vLLM's CPU requirements *using the CPU-only torch index*.
+                  # This forces sub-dependencies to also pick up the CPU-only torch.
+                  echo "Installing vLLM CPU requirements..."
+                  pip install --no-cache-dir --target=/tmp/ray/pip-packages \
+                    --extra-index-url https://download.pytorch.org/whl/cpu \
+                    -r requirements/cpu.txt
+
+                  # Now that all dependencies are correctly installed, build vLLM.
+                  echo "Building vLLM with --no-deps..."
+                  pip install --no-deps --no-cache-dir --target=/tmp/ray/pip-packages .
                   
                   echo "vLLM build complete. Cleaning up build directory..."
                   cd /
                   rm -rf "$BUILD_DIR"
                   
-                  # Step 4: Clean up conflicting packages
                   echo "Cleaning up conflicting packages..."
                   rm -rf /tmp/ray/pip-packages/ray /tmp/ray/pip-packages/ray-* 2>/dev/null || true
                   rm -rf /tmp/ray/pip-packages/opentelemetry* 2>/dev/null || true
