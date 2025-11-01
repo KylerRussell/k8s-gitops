@@ -6,7 +6,7 @@ metadata:
   labels:
     ray.io/cluster: distributed-ai-cluster
   annotations:
-    # This annotation is still needed to ensure our custom command is used.
+    # This annotation is still required to ensure our custom command is used.
     ray.io/overwrite-container-cmd: "true"
 spec:
   enableInTreeAutoscaling: false
@@ -67,6 +67,7 @@ spec:
             # Correctly override the command to execute the Ray start script.
             command: ["/bin/bash", "-c"]
             args:
+              - "ulimit -n 65536; exec $KUBERAY_GEN_RAY_START_CMD"
             resources:
               limits:
                 cpu: "60"
@@ -181,6 +182,7 @@ spec:
               # Correctly override the command to execute the Ray start script.
               command: ["/bin/bash", "-c"]
               args:
+                - "ulimit -n 65536; exec $KUBERAY_GEN_RAY_START_CMD"
               resources:
                 limits:
                   cpu: "60"
