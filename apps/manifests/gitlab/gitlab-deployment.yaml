@@ -103,10 +103,10 @@ spec:
           httpGet:
             path: /-/liveness
             port: 80
-          initialDelaySeconds: 300
+          initialDelaySeconds: 600
           periodSeconds: 10
           timeoutSeconds: 5
-          failureThreshold: 3
+          failureThreshold: 6
         readinessProbe:
           httpGet:
             path: /-/readiness
