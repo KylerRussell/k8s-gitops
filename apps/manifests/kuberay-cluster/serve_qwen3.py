@@ -13,7 +13,10 @@ from accelerate import init_empty_weights, load_checkpoint_and_dispatch
 
 # --- Configuration ---
 MODEL_PATH = "/models/Qwen3-235B-A22B-Thinking-2507"
-OFFLOAD_PATH = "/models/ray-offload" # Use persistent storage
+# --- OPTIMIZATION ---
+# Use the in-memory /dev/shm filesystem for offloading.
+# This avoids read/write contention on the slow /models HDD.
+OFFLOAD_PATH = "/dev/shm/ray-offload" # Use in-memory storage
 MODEL_CONFIG = AutoConfig.from_pretrained(MODEL_PATH, trust_remote_code=True)
 NUM_LAYERS = MODEL_CONFIG.num_hidden_layers
 SHARD_1_LAYERS = 31
