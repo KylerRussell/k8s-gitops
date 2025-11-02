@@ -40,7 +40,7 @@ spec:
         - name: OLLAMA_BASE_URLS
           value: http://open-webui-ollama.ollama.svc.cluster.local:11434
         - name: OPENAI_API_BASE_URLS
-          value: http://open-webui-pipelines.ollama.svc.cluster.local:9099;https://api.openai.com/v1;http://vllm-api.kuberay-system.svc.cluster.local:8000/v1
+          value: http://open-webui-pipelines.ollama.svc.cluster.local:9099;https://api.openai.com/v1;http://distributed-ai-cluster-head-svc.kuberay-system.svc.cluster.local:8000/v1
         - name: OPENAI_API_KEYS
           value: ";sk-openai-key;sk-vllm-dummy"
         - name: WEBUI_HOST
