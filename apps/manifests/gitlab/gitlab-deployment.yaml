@@ -106,7 +106,7 @@ spec:
             httpHeaders:
             - name: Host
               value: gitlab.homelab.com
-          initialDelaySeconds: 600
+          initialDelaySeconds: 900
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 6
@@ -117,7 +117,7 @@ spec:
             httpHeaders:
             - name: Host
               value: gitlab.homelab.com
-          initialDelaySeconds: 180
+          initialDelaySeconds: 900
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 10
