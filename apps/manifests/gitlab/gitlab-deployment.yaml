@@ -29,7 +29,7 @@ spec:
         - name: GITLAB_OMNIBUS_CONFIG
           value: |
             external_url 'http://gitlab.homelab.com'
-            gitlab_rails['initial_root_password'] = ENV['GITLAB_ROOT_PASSWORD']
+            gitlab_rails['initial_root_password'] = ENV
             
             # PostgreSQL settings
             postgresql['enable'] = false
@@ -37,9 +37,9 @@ spec:
             gitlab_rails['db_encoding'] = 'utf8'
             gitlab_rails['db_host'] = 'gitlab-postgresql'
             gitlab_rails['db_port'] = 5432
-            gitlab_rails['db_database'] = ENV['POSTGRES_DB']
-            gitlab_rails['db_username'] = ENV['POSTGRES_USER']
-            gitlab_rails['db_password'] = ENV['POSTGRES_PASSWORD']
+            gitlab_rails['db_database'] = ENV
+            gitlab_rails['db_username'] = ENV
+            gitlab_rails['db_password'] = ENV
             
             # Redis settings
             redis['enable'] = false
@@ -64,7 +64,7 @@ spec:
             puma['max_threads'] = 4
             
             # Sidekiq settings (background jobs)
-            sidekiq['max_concurrency'] = 10
+            sidekiq['concurrency'] = 10
         - name: GITLAB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -99,28 +99,27 @@ spec:
           limits:
             memory: "8Gi"
             cpu: "4000m"
-        livenessProbe:
+        startupProbe:
           httpGet:
             path: /-/liveness
-            port: 80
-            httpHeaders:
-            - name: Host
-              value: gitlab.homelab.com
-          initialDelaySeconds: 900
+            port: http
+          failureThreshold: 60
           periodSeconds: 10
           timeoutSeconds: 5
-          failureThreshold: 6
         readinessProbe:
           httpGet:
             path: /-/readiness
-            port: 80
-            httpHeaders:
-            - name: Host
-              value: gitlab.homelab.com
-          initialDelaySeconds: 900
+            port: http
+          failureThreshold: 3
           periodSeconds: 10
           timeoutSeconds: 5
-          failureThreshold: 10
+        livenessProbe:
+          httpGet:
+            path: /-/liveness
+            port: http
+          failureThreshold: 3
+          periodSeconds: 20
+          timeoutSeconds: 5
       volumes:
       - name: gitlab-data
         persistentVolumeClaim:
