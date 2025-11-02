@@ -103,6 +103,9 @@ spec:
           httpGet:
             path: /-/liveness
             port: 80
+            httpHeaders:
+            - name: Host
+              value: gitlab.homelab.com
           initialDelaySeconds: 600
           periodSeconds: 10
           timeoutSeconds: 5
@@ -111,6 +114,9 @@ spec:
           httpGet:
             path: /-/readiness
             port: 80
+            httpHeaders:
+            - name: Host
+              value: gitlab.homelab.com
           initialDelaySeconds: 180
           periodSeconds: 10
           timeoutSeconds: 5
