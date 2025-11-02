@@ -11,7 +11,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-  - host: gitlab.local
+  - host: gitlab.homelab.com
     http:
       paths:
       - path: /
