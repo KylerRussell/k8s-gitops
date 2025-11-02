@@ -17,7 +17,7 @@ spec:
     spec:
       containers:
       - name: gitlab
-        image: gitlab/gitlab-ce:16.11.0-ce.0
+        image: gitlab/gitlab-ce:17.4.1-ce.0
         ports:
         - containerPort: 80
           name: http
@@ -29,62 +29,67 @@ spec:
         - name: GITLAB_OMNIBUS_CONFIG
           value: |
             external_url 'http://gitlab.homelab.com'
-            gitlab_rails['initial_root_password'] = ENV
-            
-            # PostgreSQL settings
+
+            # Root password injected via Kubernetes secret
+            gitlab_rails['initial_root_password'] = '${GITLAB_ROOT_PASSWORD}'
+
+            # PostgreSQL settings (external database)
             postgresql['enable'] = false
             gitlab_rails['db_adapter'] = 'postgresql'
             gitlab_rails['db_encoding'] = 'utf8'
             gitlab_rails['db_host'] = 'gitlab-postgresql'
             gitlab_rails['db_port'] = 5432
-            gitlab_rails['db_database'] = ENV
-            gitlab_rails['db_username'] = ENV
-            gitlab_rails['db_password'] = ENV
-            
-            # Redis settings
+            gitlab_rails['db_database'] = '${POSTGRES_DB}'
+            gitlab_rails['db_username'] = '${POSTGRES_USER}'
+            gitlab_rails['db_password'] = '${POSTGRES_PASSWORD}'
+
+            # Redis settings (external cache)
             redis['enable'] = false
             gitlab_rails['redis_host'] = 'gitlab-redis'
             gitlab_rails['redis_port'] = 6379
-            
-            # Disable services we don't need for a minimal setup
+
+            # Disable bundled monitoring tools for a lighter setup
             prometheus_monitoring['enable'] = false
             alertmanager['enable'] = false
             grafana['enable'] = false
-            
-            # GitLab settings
+
+            # GitLab core configuration
             gitlab_rails['gitlab_shell_ssh_port'] = 2222
             gitlab_rails['time_zone'] = 'UTC'
-            
-            # Email settings (configure these according to your needs)
             gitlab_rails['gitlab_email_enabled'] = false
-            
-            # Puma settings (web server)
+
+            # Web server (Puma)
             puma['worker_processes'] = 2
             puma['min_threads'] = 1
             puma['max_threads'] = 4
-            
-            # Sidekiq settings (background jobs)
-            sidekiq['concurrency'] = 10
+
+            # Background jobs (Sidekiq)
+            sidekiq['max_concurrency'] = 10
+
         - name: GITLAB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
               name: gitlab-secret
               key: gitlab-root-password
+
         - name: POSTGRES_USER
           valueFrom:
             secretKeyRef:
               name: gitlab-postgresql
               key: username
+
         - name: POSTGRES_PASSWORD
           valueFrom:
             secretKeyRef:
               name: gitlab-postgresql
               key: password
+
         - name: POSTGRES_DB
           valueFrom:
             secretKeyRef:
               name: gitlab-postgresql
               key: database
+
         volumeMounts:
         - name: gitlab-data
           mountPath: /var/opt/gitlab
@@ -92,6 +97,7 @@ spec:
           mountPath: /var/log/gitlab
         - name: gitlab-config
           mountPath: /etc/gitlab
+
         resources:
           requests:
             memory: "4Gi"
@@ -99,27 +105,31 @@ spec:
           limits:
             memory: "8Gi"
             cpu: "4000m"
-        startupProbe:
-          httpGet:
-            path: /-/liveness
-            port: http
-          failureThreshold: 60
-          periodSeconds: 10
-          timeoutSeconds: 5
-        readinessProbe:
-          httpGet:
-            path: /-/readiness
-            port: http
-          failureThreshold: 3
-          periodSeconds: 10
-          timeoutSeconds: 5
+
         livenessProbe:
           httpGet:
             path: /-/liveness
-            port: http
-          failureThreshold: 3
-          periodSeconds: 20
+            port: 80
+            httpHeaders:
+            - name: Host
+              value: gitlab.homelab.com
+          initialDelaySeconds: 900
+          periodSeconds: 10
           timeoutSeconds: 5
+          failureThreshold: 6
+
+        readinessProbe:
+          httpGet:
+            path: /-/readiness
+            port: 80
+            httpHeaders:
+            - name: Host
+              value: gitlab.homelab.com
+          initialDelaySeconds: 900
+          periodSeconds: 10
+          timeoutSeconds: 5
+          failureThreshold: 10
+
       volumes:
       - name: gitlab-data
         persistentVolumeClaim:
