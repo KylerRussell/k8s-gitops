@@ -51,7 +51,6 @@ spec:
             # Disable bundled monitoring tools for a lighter setup
             prometheus_monitoring['enable'] = false
             alertmanager['enable'] = false
-            grafana['enable'] = false
 
             # GitLab core configuration
             gitlab_rails['gitlab_shell_ssh_port'] = 2222
