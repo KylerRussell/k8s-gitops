@@ -12,7 +12,7 @@ data:
     nginx['listen_port'] = 80
 
     # Root password injected via Kubernetes secret
-    gitlab_rails['initial_root_password'] = ENV
+    gitlab_rails['initial_root_password'] = ENV['GITLAB_ROOT_PASSWORD']
 
     # PostgreSQL settings (external database)
     postgresql['enable'] = false
@@ -20,9 +20,9 @@ data:
     gitlab_rails['db_encoding'] = 'utf8'
     gitlab_rails['db_host'] = 'gitlab-postgresql'
     gitlab_rails['db_port'] = 5432
-    gitlab_rails['db_database'] = ENV
-    gitlab_rails['db_username'] = ENV
-    gitlab_rails['db_password'] = ENV
+    gitlab_rails['db_database'] = ENV['POSTGRES_DB']
+    gitlab_rails['db_username'] = ENV['POSTGRES_USER']
+    gitlab_rails['db_password'] = ENV['POSTGRES_PASSWORD']
 
     # Redis settings (external cache)
     redis['enable'] = false
