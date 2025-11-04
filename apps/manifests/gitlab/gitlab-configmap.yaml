@@ -46,6 +46,6 @@ data:
     # Background jobs (Sidekiq)
     sidekiq['max_concurrency'] = 10
 
-    # --- ADDED TO FIX KAS HAIRPIN ---
+    # --- FIX FOR KAS HAIRPIN ---
     # Tell KAS to use the internal Puma address for the API
     gitlab_kas['internal_api_url'] = 'http://127.0.0.1:8080'

@@ -26,8 +26,6 @@ spec:
         - containerPort: 22
           name: ssh
         env:
-        # --- GITLAB_OMNIBUS_CONFIG BLOCK REMOVED ---
-        
         - name: GITLAB_ROOT_PASSWORD
           valueFrom:
             secretKeyRef:
@@ -71,18 +69,18 @@ spec:
             memory: "8Gi"
             cpu: "4000m"
 
-        # --- PROBES MODIFIED WITH HOST HEADER ---
+        # --- PROBES MODIFIED WITH 'localhost' HOST HEADER ---
         startupProbe:
           httpGet:
             path: /-/readiness
             port: 80
             httpHeaders:
             - name: Host
-              value: gitlab.homelab.com
+              value: localhost
           initialDelaySeconds: 60
           periodSeconds: 30
           timeoutSeconds: 5
-          failureThreshold: 30 # 30 failures * 30s = 900s (15 min) grace period
+          failureThreshold: 30 # 15 min grace period
 
         livenessProbe:
           httpGet:
@@ -90,7 +88,7 @@ spec:
             port: 80
             httpHeaders:
             - name: Host
-              value: gitlab.homelab.com
+              value: localhost
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
@@ -102,7 +100,7 @@ spec:
             port: 80
             httpHeaders:
             - name: Host
-              value: gitlab.homelab.com
+              value: localhost
           initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
