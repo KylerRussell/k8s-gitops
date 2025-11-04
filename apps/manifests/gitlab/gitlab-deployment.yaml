@@ -77,7 +77,7 @@ spec:
             httpHeaders:
             - name: Host
               value: localhost
-          initialDelaySeconds: 60
+          initialDelaySeconds: 180
           periodSeconds: 30
           timeoutSeconds: 5
           failureThreshold: 30 # 15 min grace period
@@ -89,7 +89,7 @@ spec:
             httpHeaders:
             - name: Host
               value: localhost
-          initialDelaySeconds: 30
+          initialDelaySeconds: 600
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 6
@@ -101,7 +101,7 @@ spec:
             httpHeaders:
             - name: Host
               value: localhost
-          initialDelaySeconds: 30
+          initialDelaySeconds: 360
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 10
