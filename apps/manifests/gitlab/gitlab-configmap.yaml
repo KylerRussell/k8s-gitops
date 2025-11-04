@@ -49,3 +49,7 @@ data:
     # --- FIX FOR KAS HAIRPIN ---
     # Tell KAS to use the internal Puma address for the API
     gitlab_kas['internal_api_url'] = 'http://127.0.0.1:8080'
+
+    # --- FIX FOR KUBERNETES HEALTH PROBES ---
+    # Allow health check endpoints to work from any Host header
+    nginx['custom_gitlab_server_config'] = "location ~ ^/-/(readiness|liveness|health) {\n  access_log off;\n  proxy_pass http://gitlab-workhorse;\n}"
