@@ -13,7 +13,7 @@ spec:
   - port: 443
     targetPort: 443
     protocol: TCP
-    name: https
+    name: http
   selector:
     app: gitlab
 ---
