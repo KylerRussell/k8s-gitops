@@ -33,9 +33,6 @@ spec:
             # Listen on all interfaces for Kubernetes probes
             nginx['listen_addresses'] = ['0.0.0.0', '[::]']
             nginx['listen_port'] = 80
-            
-            # Ensure GitLab trusts all proxies
-            gitlab_rails['trusted_proxies'] = ['0.0.0.0/0', '::/0']
 
             # Root password injected via Kubernetes secret
             gitlab_rails['initial_root_password'] = ENV['GITLAB_ROOT_PASSWORD']
