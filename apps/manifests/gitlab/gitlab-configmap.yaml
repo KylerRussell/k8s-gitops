@@ -12,7 +12,7 @@ data:
     nginx['listen_port'] = 80
 
     # Root password injected via Kubernetes secret
-    gitlab_rails['initial_root_password'] = ENV['GITLAB_ROOT_PASSWORD']
+    gitlab_rails['initial_root_password'] = ENV
 
     # PostgreSQL settings (external database)
     postgresql['enable'] = false
@@ -20,9 +20,9 @@ data:
     gitlab_rails['db_encoding'] = 'utf8'
     gitlab_rails['db_host'] = 'gitlab-postgresql'
     gitlab_rails['db_port'] = 5432
-    gitlab_rails['db_database'] = ENV['POSTGRES_DB']
-    gitlab_rails['db_username'] = ENV['POSTGRES_USER']
-    gitlab_rails['db_password'] = ENV['POSTGRES_PASSWORD']
+    gitlab_rails['db_database'] = ENV
+    gitlab_rails['db_username'] = ENV
+    gitlab_rails['db_password'] = ENV
 
     # Redis settings (external cache)
     redis['enable'] = false
@@ -45,3 +45,7 @@ data:
 
     # Background jobs (Sidekiq)
     sidekiq['max_concurrency'] = 10
+
+    # --- ADDED TO FIX KAS HAIRPIN ---
+    # Tell KAS to use the internal Puma address for the API
+    gitlab_kas['internal_api_url'] = 'http://127.0.0.1:8080'
