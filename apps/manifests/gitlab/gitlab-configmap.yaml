@@ -1,0 +1,47 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: gitlab-config
+  namespace: gitlab
+data:
+  gitlab.rb: |
+    external_url 'http://gitlab.homelab.com'
+    
+    # Listen on all interfaces for Kubernetes probes
+    nginx['listen_addresses'] = ['0.0.0.0', '[::]']
+    nginx['listen_port'] = 80
+
+    # Root password injected via Kubernetes secret
+    gitlab_rails['initial_root_password'] = ENV['GITLAB_ROOT_PASSWORD']
+
+    # PostgreSQL settings (external database)
+    postgresql['enable'] = false
+    gitlab_rails['db_adapter'] = 'postgresql'
+    gitlab_rails['db_encoding'] = 'utf8'
+    gitlab_rails['db_host'] = 'gitlab-postgresql'
+    gitlab_rails['db_port'] = 5432
+    gitlab_rails['db_database'] = ENV['POSTGRES_DB']
+    gitlab_rails['db_username'] = ENV['POSTGRES_USER']
+    gitlab_rails['db_password'] = ENV['POSTGRES_PASSWORD']
+
+    # Redis settings (external cache)
+    redis['enable'] = false
+    gitlab_rails['redis_host'] = 'gitlab-redis'
+    gitlab_rails['redis_port'] = 6379
+
+    # Disable bundled monitoring tools for a lighter setup
+    prometheus_monitoring['enable'] = false
+    alertmanager['enable'] = false
+
+    # GitLab core configuration
+    gitlab_rails['gitlab_shell_ssh_port'] = 2222
+    gitlab_rails['time_zone'] = 'UTC'
+    gitlab_rails['gitlab_email_enabled'] = false
+
+    # Web server (Puma)
+    puma['worker_processes'] = 2
+    puma['min_threads'] = 1
+    puma['max_threads'] = 4
+
+    # Background jobs (Sidekiq)
+    sidekiq['max_concurrency'] = 10
