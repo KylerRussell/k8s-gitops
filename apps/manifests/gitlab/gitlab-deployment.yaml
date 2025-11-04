@@ -59,7 +59,6 @@ spec:
           mountPath: /var/log/gitlab
         - name: gitlab-config
           mountPath: /etc/gitlab
-        # --- ADDED TO MOUNT THE CONFIGMAP ---
         - name: gitlab-config-file
           mountPath: /etc/gitlab/gitlab.rb
           subPath: gitlab.rb
@@ -72,11 +71,14 @@ spec:
             memory: "8Gi"
             cpu: "4000m"
 
-        # --- PROBES MODIFIED FOR ROBUST STARTUP ---
+        # --- PROBES MODIFIED WITH HOST HEADER ---
         startupProbe:
           httpGet:
             path: /-/readiness
             port: 80
+            httpHeaders:
+            - name: Host
+              value: gitlab.homelab.com
           initialDelaySeconds: 60
           periodSeconds: 30
           timeoutSeconds: 5
@@ -86,7 +88,10 @@ spec:
           httpGet:
             path: /-/liveness
             port: 80
-          initialDelaySeconds: 30 # Runs only after startupProbe succeeds
+            httpHeaders:
+            - name: Host
+              value: gitlab.homelab.com
+          initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 6
@@ -95,7 +100,10 @@ spec:
           httpGet:
             path: /-/readiness
             port: 80
-          initialDelaySeconds: 30 # Runs only after startupProbe succeeds
+            httpHeaders:
+            - name: Host
+              value: gitlab.homelab.com
+          initialDelaySeconds: 30
           periodSeconds: 10
           timeoutSeconds: 5
           failureThreshold: 10
@@ -110,7 +118,6 @@ spec:
       - name: gitlab-config
         persistentVolumeClaim:
           claimName: gitlab-config
-      # --- ADDED TO DEFINE THE CONFIGMAP VOLUME ---
       - name: gitlab-config-file
         configMap:
           name: gitlab-config
