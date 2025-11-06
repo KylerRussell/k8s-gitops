@@ -99,7 +99,7 @@ data:
     gitlab_kas['external_api_url'] = 'http://gitlab.homelab.com'
     gitlab_kas['api_secret_file'] = '/var/opt/gitlab/gitlab-kas/api_secret'
     gitlab_kas['listen_address'] = '0.0.0.0:8150'
-    gitlab_kas['agent_reconnect_timeout'] = 7200s
+    gitlab_kas['agent_reconnect_timeout'] = 7200
 
     # === GITLAB RAILS CORE SETTINGS ===
     gitlab_rails['time_zone'] = 'UTC'
