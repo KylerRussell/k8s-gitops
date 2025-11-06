@@ -46,10 +46,26 @@ data:
     # Background jobs (Sidekiq)
     sidekiq['max_concurrency'] = 10
 
-    # --- FIX FOR KAS HAIRPIN ---
-    # Tell KAS to use the internal Puma address for the API
-    gitlab_kas['internal_api_url'] = 'http://127.0.0.1:8080'
+    # === CRITICAL FIX FOR INTERNAL COMMUNICATIONS ===
+    # KAS needs to communicate with the GitLab API internally
+    # Since the pod has hostAliases mapping gitlab.homelab.com to localhost,
+    # and nginx listens on localhost, KAS can reach the API via this path
+    gitlab_kas['internal_api_url'] = 'http://gitlab.homelab.com'
+    
+    # Trust the X-Forwarded-* headers from the ingress controller
+    # This is crucial for GitLab to understand it's behind a reverse proxy
+    nginx['real_ip_trusted_addresses'] = ['0.0.0.0/0']
+    gitlab_rails['trusted_proxies'] = ['0.0.0.0/0']
 
-    # --- FIX FOR KUBERNETES HEALTH PROBES ---
+    # === FIX FOR WORKHORSE AND PUMA COMMUNICATION ===
+    # Workhorse communicates with Puma on a socket - make sure it's accessible
+    gitlab_rails['workhorse_socket_dir'] = '/var/opt/gitlab/gitlab-workhorse'
+
+    # === FIX FOR HEALTH PROBES ===
     # Allow health check endpoints to work from any Host header
-    nginx['custom_gitlab_server_config'] = "location ~ ^/-/(readiness|liveness|health) {\n  access_log off;\n  proxy_pass http://gitlab-workhorse;\n}"
+    nginx['custom_gitlab_server_config'] = "
+    location ~ ^/-/(readiness|liveness|health) {
+      access_log off;
+      proxy_pass http://gitlab-workhorse;
+    }
+    "

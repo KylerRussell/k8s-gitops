@@ -15,6 +15,11 @@ spec:
       labels:
         app: gitlab
     spec:
+      hostAliases:
+      # This allows the pod to reach gitlab.homelab.com locally
+      - ip: "127.0.0.1"
+        hostnames:
+        - "gitlab.homelab.com"
       containers:
       - name: gitlab
         image: gitlab/gitlab-ce:17.4.1-ce.0
