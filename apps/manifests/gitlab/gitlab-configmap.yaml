@@ -7,19 +7,34 @@ data:
   gitlab.rb: |
     external_url 'http://gitlab.homelab.com'
     
-    # === CONTAINER ENVIRONMENT SETTINGS ===
-    # Disable features that fail in restricted Kubernetes environments
+    # === CONTAINER ENVIRONMENT OPTIMIZATION ===
+    # These settings prevent startup failures in containerized/restricted environments
     node['gitlab']['bootstrap']['enable'] = true
     
-    # Listen on all interfaces for Kubernetes probes
+    # CRITICAL: Disable system parameter management
+    # In restricted Kubernetes, we can't modify /proc/sys or ulimit
+    # These warnings can be safely ignored in containers
+    node['gitlab']['manage_kernel_parameters'] = false
+    node['gitlab']['manage_storage_directories']['manage_etc'] = false
+
+    # === NGINX CONFIGURATION ===
+    # Listen on all interfaces for Kubernetes ingress and probes
     nginx['listen_addresses'] = ['0.0.0.0', '[::]']
     nginx['listen_port'] = 80
+    nginx['worker_processes'] = 'auto'
+    nginx['worker_rlimit_nofile'] = 65535
 
-    # Root password injected via Kubernetes secret
+    # Trust reverse proxy headers from ingress controller
+    nginx['real_ip_trusted_addresses'] = ['0.0.0.0/0']
+    nginx['real_ip_header'] = 'X-Forwarded-For'
+    nginx['real_ip_recursive'] = 'on'
+
+    # === ROOT PASSWORD ===
+    # GitLab root password injected via Kubernetes secret
     gitlab_rails['initial_root_password'] = ENV['GITLAB_ROOT_PASSWORD']
 
     # === DATABASE CONFIGURATION ===
-    # PostgreSQL settings (external database)
+    # Using external PostgreSQL (not bundled)
     postgresql['enable'] = false
     gitlab_rails['db_adapter'] = 'postgresql'
     gitlab_rails['db_encoding'] = 'utf8'
@@ -28,76 +43,90 @@ data:
     gitlab_rails['db_database'] = ENV['POSTGRES_DB']
     gitlab_rails['db_username'] = ENV['POSTGRES_USER']
     gitlab_rails['db_password'] = ENV['POSTGRES_PASSWORD']
+    
+    # Database connection optimization for containers
+    gitlab_rails['db_pool'] = 10
+    gitlab_rails['db_prepared_statements'] = false
 
-    # Redis settings (external cache)
+    # === CACHE (REDIS) ===
+    # Using external Redis (not bundled)
     redis['enable'] = false
     gitlab_rails['redis_host'] = 'gitlab-redis'
     gitlab_rails['redis_port'] = 6379
+    gitlab_rails['redis_db'] = 0
 
     # === DISABLE BUNDLED SERVICES ===
+    # These services cause errors in restricted Kubernetes environments
     prometheus_monitoring['enable'] = false
     alertmanager['enable'] = false
     node_exporter['enable'] = false
     redis_exporter['enable'] = false
     postgres_exporter['enable'] = false
     grafana['enable'] = false
-
-    # === GITLAB CORE CONFIGURATION ===
-    gitlab_rails['gitlab_shell_ssh_port'] = 2222
-    gitlab_rails['time_zone'] = 'UTC'
-    gitlab_rails['gitlab_email_enabled'] = false
-
-    # === WEB SERVER (PUMA) - CRITICAL SECTION ===
-    # Puma must start and create its socket for Workhorse to communicate
+    
+    # === PUMA (WEB SERVER) ===
+    # CRITICAL: Explicit socket configuration for Workhorse communication
     puma['bind'] = 'unix:///var/opt/gitlab/gitlab-rails/sockets/gitlab.socket'
     puma['socket_backlog'] = 1024
     puma['worker_processes'] = 2
-    puma['min_threads'] = 1
+    puma['min_threads'] = 2
     puma['max_threads'] = 4
     puma['worker_shutdown_timeout'] = 30
+    puma['per_worker_max_memory_mb'] = 512
 
-    # === WORKHORSE CONFIGURATION ===
-    # Ensure Workhorse can communicate with Puma via socket
+    # === WORKHORSE ===
+    # Ensures Workhorse can communicate with Puma via socket
     gitlab_workhorse['enable'] = true
     gitlab_workhorse['socket_dir'] = '/var/opt/gitlab/gitlab-workhorse'
     gitlab_rails['workhorse_socket_dir'] = '/var/opt/gitlab/gitlab-workhorse'
 
-    # === BACKGROUND JOBS (SIDEKIQ) ===
+    # === SIDEKIQ (BACKGROUND JOBS) ===
     sidekiq['max_concurrency'] = 10
     sidekiq['shutdown_timeout'] = 25
-
-    # === KAS (KUBERNETES AGENT SERVER) ===
-    # CRITICAL: KAS uses localhost since we have hostAliases
-    gitlab_kas['enable'] = true
-    gitlab_kas['internal_api_url'] = 'http://gitlab.homelab.com'
-    gitlab_kas['api_secret_file'] = '/var/opt/gitlab/gitlab-kas/api_secret'
-    gitlab_kas['agent_reconnect_timeout'] = 7200s
-    gitlab_kas['listen_address'] = '0.0.0.0:8150'
+    sidekiq['listen_address'] = '0.0.0.0'
 
     # === GITLAB SHELL ===
+    gitlab_rails['gitlab_shell_ssh_port'] = 2222
     gitlab_shell['auth_file'] = '/var/opt/gitlab/.ssh/authorized_keys'
     gitlab_shell['git_trace_codequality'] = false
 
-    # === NGINX CONFIGURATION ===
-    # Trust reverse proxy headers from ingress controller
-    nginx['real_ip_trusted_addresses'] = ['0.0.0.0/0']
-    nginx['real_ip_header'] = 'X-Forwarded-For'
-    nginx['real_ip_recursive'] = 'on'
+    # === KAS (KUBERNETES AGENT SERVER) ===
+    # CRITICAL: Internal API URL uses hostAliases resolution to localhost
+    # hostAliases maps gitlab.homelab.com → 127.0.0.1
+    # This avoids external IP routing which fails from inside the pod
+    gitlab_kas['enable'] = true
+    gitlab_kas['internal_api_url'] = 'http://gitlab.homelab.com'
+    gitlab_kas['external_api_url'] = 'http://gitlab.homelab.com'
+    gitlab_kas['api_secret_file'] = '/var/opt/gitlab/gitlab-kas/api_secret'
+    gitlab_kas['listen_address'] = '0.0.0.0:8150'
+    gitlab_kas['agent_reconnect_timeout'] = 7200s
+
+    # === GITLAB RAILS CORE SETTINGS ===
+    gitlab_rails['time_zone'] = 'UTC'
+    gitlab_rails['gitlab_email_enabled'] = false
+    gitlab_rails['log_level'] = 'info'
+    gitlab_rails['trusted_proxies'] = ['0.0.0.0/0']
     
-    # Configure proper upstream to Workhorse socket
+    # Ensure socket directory is properly encoded
+    gitlab_rails['socket_directory_uri_encode'] = false
+
+    # === NGINX UPSTREAM CONFIGURATION ===
+    # Configure nginx to proxy requests to Workhorse via socket
     nginx['upstream_socket_helper_url'] = 'http+unix://%2Fvar%2Fopt%2Fgitlab%2Fgitlab-workhorse%2Fsockets%2Fgitlab-workhorse.socket'
 
-    # Custom nginx server config for health checks
+    # Custom nginx configuration for health checks and WebSocket support
     nginx['custom_gitlab_server_config'] = "
-    # Health check endpoints
+    # Health check endpoints - critical for Kubernetes liveness/readiness probes
     location ~ ^/-/(readiness|liveness|health) {
       access_log off;
       proxy_http_version 1.1;
       proxy_pass http://gitlab-workhorse;
       proxy_set_header Connection '';
+      proxy_read_timeout 10s;
+      proxy_connect_timeout 5s;
     }
     
-    # WebSocket support for various features
+    # WebSocket support for real-time features
     location ~ ^/-/cable {
       proxy_http_version 1.1;
       proxy_pass http://gitlab-workhorse;
@@ -105,32 +134,20 @@ data:
       proxy_set_header Connection \"upgrade\";
       proxy_read_timeout 3600s;
       proxy_send_timeout 3600s;
+      proxy_connect_timeout 7200s;
     }
     "
 
-    # === RAILS CONFIGURATION ===
-    gitlab_rails['trusted_proxies'] = ['0.0.0.0/0']
-    gitlab_rails['log_level'] = 'info'
-    
-    # Ensure socket directory permissions
-    gitlab_rails['socket_directory_uri_encode'] = false
-
-    # === GITLAB SHELL SETUP ===
-    # Prevents SSH key-related errors on startup
-    gitlab_shell['git_data_directory'] = '/var/opt/gitlab/git-data'
-    gitlab_shell['authorized_keys_file'] = '/var/opt/gitlab/.ssh/authorized_keys'
-
-    # === STARTUP BEHAVIOR ===
-    # These settings help in containerized/restricted environments
+    # === CONTAINER STARTUP BEHAVIOR ===
+    # These settings help GitLab start properly in containerized environments
     gitlab_rails['rake_cache_clear'] = false
     node['gitlab']['gitlab-rails']['enable'] = true
-    node['gitlab']['gitaly']['enable'] = false  # Using external DB only
+    node['gitlab']['gitaly']['enable'] = false  # Using external DB, not bundled
     node['gitlab']['git-http-server']['enable'] = false
+    node['gitlab']['puma']['enable'] = true
 
-    # === SSL/TLS (Disabled - using ingress controller) ===
+    # === SSL/TLS CONFIGURATION ===
+    # SSL/TLS is handled by the ingress controller, not by GitLab
     nginx['redirect_http_to_https'] = false
     nginx['ssl_redirect'] = false
-
-    # === ERROR HANDLING ===
-    # Don't fail completely if optional features have issues
-    node['gitlab']['manage_kernel_parameters'] = false
+    nginx['ssl_protocols'] = "TLSv1.2 TLSv1.3"
