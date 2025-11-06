@@ -145,6 +145,10 @@ data:
     # Disable Gitaly storage validation in containers
     # Gitaly handles git repository storage - we're not using it in this deployment
     gitaly['enable'] = false
+    
+    # Disable Gitaly git_data_dirs recipe to prevent permission errors
+    # This recipe tries to set permissions on /var/opt/gitlab/git-data which fails in restricted k8s
+    node.default['gitlab']['gitaly']['git_data_dirs'] = []
 
     # === SSL/TLS CONFIGURATION ===
     # SSL/TLS is handled by the ingress controller, not by GitLab
