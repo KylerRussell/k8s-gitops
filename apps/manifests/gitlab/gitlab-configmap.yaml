@@ -59,10 +59,6 @@ data:
     # These services cause errors in restricted Kubernetes environments
     prometheus_monitoring['enable'] = false
     alertmanager['enable'] = false
-    node_exporter['enable'] = false
-    redis_exporter['enable'] = false
-    postgres_exporter['enable'] = false
-    grafana['enable'] = false
     
     # === PUMA (WEB SERVER) ===
     # CRITICAL: Explicit socket configuration for Workhorse communication
