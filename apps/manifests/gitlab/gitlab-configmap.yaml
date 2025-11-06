@@ -14,10 +14,11 @@ data:
     node.default['gitlab']['gitaly']['enable'] = false
     node.default['gitlab']['gitaly']['git_data_dirs'] = []
     
-    # CRITICAL: Configure gitaly with empty storage array
-    # This prevents git_data_dirs recipe from creating storage_directory resources
-    # which would fail due to permission restrictions in Kubernetes
-    gitaly['configuration']['storage'] = []
+    # CRITICAL: Explicitly skip gitaly recipes to prevent them from running at all
+    # Even with enable=false and empty storage, the recipes still try to create resources
+    skip_recipe 'gitaly::git_data_dirs'
+    skip_recipe 'gitaly::gitaly'
+    skip_recipe 'gitaly'
     
     # Disable bundled services that aren't needed
     postgresql['enable'] = false
