@@ -7,10 +7,20 @@ data:
   gitlab.rb: |
     external_url 'http://gitlab.homelab.com'
     
-    # === CONTAINER ENVIRONMENT OPTIMIZATION ===
-    # These settings prevent startup failures in containerized/restricted environments
+    # === CRITICAL: DISABLE SERVICES EARLY ===
+    # Must be set BEFORE any service-specific configs to prevent recipe inclusion
+    # Gitaly is for managing git repositories - not needed in this deployment
+    gitaly['enable'] = false
+    node.default['gitlab']['gitaly']['enable'] = false
+    node.default['gitlab']['gitaly']['git_data_dirs'] = []
+    
+    # Disable bundled services that aren't needed
+    postgresql['enable'] = false
+    redis['enable'] = false
     node.default['gitlab']['bootstrap']['enable'] = true
     
+    # === CONTAINER ENVIRONMENT OPTIMIZATION ===
+    # These settings prevent startup failures in containerized/restricted environments
     # CRITICAL: Disable system parameter management
     # In restricted Kubernetes, we can't modify /proc/sys or ulimit
     # These warnings can be safely ignored in containers
@@ -35,7 +45,6 @@ data:
 
     # === DATABASE CONFIGURATION ===
     # Using external PostgreSQL (not bundled)
-    postgresql['enable'] = false
     gitlab_rails['db_adapter'] = 'postgresql'
     gitlab_rails['db_encoding'] = 'utf8'
     gitlab_rails['db_host'] = 'gitlab-postgresql'
@@ -50,12 +59,11 @@ data:
 
     # === CACHE (REDIS) ===
     # Using external Redis (not bundled)
-    redis['enable'] = false
     gitlab_rails['redis_host'] = 'gitlab-redis'
     gitlab_rails['redis_port'] = 6379
     gitlab_rails['redis_db'] = 0
 
-    # === DISABLE BUNDLED SERVICES ===
+    # === DISABLE BUNDLED MONITORING SERVICES ===
     # These services cause errors in restricted Kubernetes environments
     prometheus_monitoring['enable'] = false
     alertmanager['enable'] = false
@@ -138,17 +146,8 @@ data:
     # These settings help GitLab start properly in containerized environments
     gitlab_rails['rake_cache_clear'] = false
     node.default['gitlab']['gitlab_rails']['enable'] = true
-    node.default['gitlab']['gitaly']['enable'] = false  # Using external DB, not bundled
     node.default['gitlab']['git-http-server']['enable'] = false
     node.default['gitlab']['puma']['enable'] = true
-    
-    # Disable Gitaly storage validation in containers
-    # Gitaly handles git repository storage - we're not using it in this deployment
-    gitaly['enable'] = false
-    
-    # Disable Gitaly git_data_dirs recipe to prevent permission errors
-    # This recipe tries to set permissions on /var/opt/gitlab/git-data which fails in restricted k8s
-    node.default['gitlab']['gitaly']['git_data_dirs'] = []
 
     # === SSL/TLS CONFIGURATION ===
     # SSL/TLS is handled by the ingress controller, not by GitLab
