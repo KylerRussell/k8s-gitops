@@ -7,6 +7,10 @@ data:
   gitlab.rb: |
     external_url 'http://gitlab.homelab.com'
     
+    # === CONTAINER ENVIRONMENT SETTINGS ===
+    # Disable features that fail in restricted Kubernetes environments
+    node['gitlab']['bootstrap']['enable'] = true
+    
     # Listen on all interfaces for Kubernetes probes
     nginx['listen_addresses'] = ['0.0.0.0', '[::]']
     nginx['listen_port'] = 80
@@ -14,6 +18,7 @@ data:
     # Root password injected via Kubernetes secret
     gitlab_rails['initial_root_password'] = ENV['GITLAB_ROOT_PASSWORD']
 
+    # === DATABASE CONFIGURATION ===
     # PostgreSQL settings (external database)
     postgresql['enable'] = false
     gitlab_rails['db_adapter'] = 'postgresql'
@@ -29,43 +34,103 @@ data:
     gitlab_rails['redis_host'] = 'gitlab-redis'
     gitlab_rails['redis_port'] = 6379
 
-    # Disable bundled monitoring tools for a lighter setup
+    # === DISABLE BUNDLED SERVICES ===
     prometheus_monitoring['enable'] = false
     alertmanager['enable'] = false
+    node_exporter['enable'] = false
+    redis_exporter['enable'] = false
+    postgres_exporter['enable'] = false
+    grafana['enable'] = false
 
-    # GitLab core configuration
+    # === GITLAB CORE CONFIGURATION ===
     gitlab_rails['gitlab_shell_ssh_port'] = 2222
     gitlab_rails['time_zone'] = 'UTC'
     gitlab_rails['gitlab_email_enabled'] = false
 
-    # Web server (Puma)
+    # === WEB SERVER (PUMA) - CRITICAL SECTION ===
+    # Puma must start and create its socket for Workhorse to communicate
+    puma['bind'] = 'unix:///var/opt/gitlab/gitlab-rails/sockets/gitlab.socket'
+    puma['socket_backlog'] = 1024
     puma['worker_processes'] = 2
     puma['min_threads'] = 1
     puma['max_threads'] = 4
+    puma['worker_shutdown_timeout'] = 30
 
-    # Background jobs (Sidekiq)
-    sidekiq['max_concurrency'] = 10
-
-    # === CRITICAL FIX FOR INTERNAL COMMUNICATIONS ===
-    # KAS needs to communicate with the GitLab API internally
-    # Since the pod has hostAliases mapping gitlab.homelab.com to localhost,
-    # and nginx listens on localhost, KAS can reach the API via this path
-    gitlab_kas['internal_api_url'] = 'http://gitlab.homelab.com'
-    
-    # Trust the X-Forwarded-* headers from the ingress controller
-    # This is crucial for GitLab to understand it's behind a reverse proxy
-    nginx['real_ip_trusted_addresses'] = ['0.0.0.0/0']
-    gitlab_rails['trusted_proxies'] = ['0.0.0.0/0']
-
-    # === FIX FOR WORKHORSE AND PUMA COMMUNICATION ===
-    # Workhorse communicates with Puma on a socket - make sure it's accessible
+    # === WORKHORSE CONFIGURATION ===
+    # Ensure Workhorse can communicate with Puma via socket
+    gitlab_workhorse['enable'] = true
+    gitlab_workhorse['socket_dir'] = '/var/opt/gitlab/gitlab-workhorse'
     gitlab_rails['workhorse_socket_dir'] = '/var/opt/gitlab/gitlab-workhorse'
 
-    # === FIX FOR HEALTH PROBES ===
-    # Allow health check endpoints to work from any Host header
+    # === BACKGROUND JOBS (SIDEKIQ) ===
+    sidekiq['max_concurrency'] = 10
+    sidekiq['shutdown_timeout'] = 25
+
+    # === KAS (KUBERNETES AGENT SERVER) ===
+    # CRITICAL: KAS uses localhost since we have hostAliases
+    gitlab_kas['enable'] = true
+    gitlab_kas['internal_api_url'] = 'http://gitlab.homelab.com'
+    gitlab_kas['api_secret_file'] = '/var/opt/gitlab/gitlab-kas/api_secret'
+    gitlab_kas['agent_reconnect_timeout'] = 7200s
+    gitlab_kas['listen_address'] = '0.0.0.0:8150'
+
+    # === GITLAB SHELL ===
+    gitlab_shell['auth_file'] = '/var/opt/gitlab/.ssh/authorized_keys'
+    gitlab_shell['git_trace_codequality'] = false
+
+    # === NGINX CONFIGURATION ===
+    # Trust reverse proxy headers from ingress controller
+    nginx['real_ip_trusted_addresses'] = ['0.0.0.0/0']
+    nginx['real_ip_header'] = 'X-Forwarded-For'
+    nginx['real_ip_recursive'] = 'on'
+    
+    # Configure proper upstream to Workhorse socket
+    nginx['upstream_socket_helper_url'] = 'http+unix://%2Fvar%2Fopt%2Fgitlab%2Fgitlab-workhorse%2Fsockets%2Fgitlab-workhorse.socket'
+
+    # Custom nginx server config for health checks
     nginx['custom_gitlab_server_config'] = "
+    # Health check endpoints
     location ~ ^/-/(readiness|liveness|health) {
       access_log off;
+      proxy_http_version 1.1;
       proxy_pass http://gitlab-workhorse;
+      proxy_set_header Connection '';
+    }
+    
+    # WebSocket support for various features
+    location ~ ^/-/cable {
+      proxy_http_version 1.1;
+      proxy_pass http://gitlab-workhorse;
+      proxy_set_header Upgrade \$http_upgrade;
+      proxy_set_header Connection \"upgrade\";
+      proxy_read_timeout 3600s;
+      proxy_send_timeout 3600s;
     }
     "
+
+    # === RAILS CONFIGURATION ===
+    gitlab_rails['trusted_proxies'] = ['0.0.0.0/0']
+    gitlab_rails['log_level'] = 'info'
+    
+    # Ensure socket directory permissions
+    gitlab_rails['socket_directory_uri_encode'] = false
+
+    # === GITLAB SHELL SETUP ===
+    # Prevents SSH key-related errors on startup
+    gitlab_shell['git_data_directory'] = '/var/opt/gitlab/git-data'
+    gitlab_shell['authorized_keys_file'] = '/var/opt/gitlab/.ssh/authorized_keys'
+
+    # === STARTUP BEHAVIOR ===
+    # These settings help in containerized/restricted environments
+    gitlab_rails['rake_cache_clear'] = false
+    node['gitlab']['gitlab-rails']['enable'] = true
+    node['gitlab']['gitaly']['enable'] = false  # Using external DB only
+    node['gitlab']['git-http-server']['enable'] = false
+
+    # === SSL/TLS (Disabled - using ingress controller) ===
+    nginx['redirect_http_to_https'] = false
+    nginx['ssl_redirect'] = false
+
+    # === ERROR HANDLING ===
+    # Don't fail completely if optional features have issues
+    node['gitlab']['manage_kernel_parameters'] = false

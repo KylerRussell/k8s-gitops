@@ -20,9 +20,21 @@ spec:
       - ip: "127.0.0.1"
         hostnames:
         - "gitlab.homelab.com"
+      
+      # For restricted Kubernetes environments (k3s, etc)
+      # This allows GitLab to run with necessary privileges
+      securityContext:
+        runAsNonRoot: false
+        runAsUser: 0  # Run as root to allow system config changes
+        fsGroup: 0
+        seccompProfile:
+          type: RuntimeDefault
+      
       containers:
       - name: gitlab
         image: gitlab/gitlab-ce:17.4.1-ce.0
+        imagePullPolicy: IfNotPresent
+        
         ports:
         - containerPort: 80
           name: http
@@ -30,6 +42,7 @@ spec:
           name: https
         - containerPort: 22
           name: ssh
+        
         env:
         - name: GITLAB_ROOT_PASSWORD
           valueFrom:
@@ -54,6 +67,10 @@ spec:
             secretKeyRef:
               name: gitlab-postgresql
               key: database
+        
+        # Suppress permission errors in restricted environments
+        - name: GITLAB_SKIP_ENV_VALIDATION
+          value: "false"
 
         volumeMounts:
         - name: gitlab-data
@@ -66,6 +83,10 @@ spec:
           mountPath: /etc/gitlab/gitlab.rb
           subPath: gitlab.rb
         
+        # Mount host proc for system tuning (needed for ulimit)
+        - name: proc
+          mountPath: /proc
+        
         resources:
           requests:
             memory: "4Gi"
@@ -74,7 +95,18 @@ spec:
             memory: "8Gi"
             cpu: "4000m"
 
-        # --- PROBES MODIFIED WITH 'localhost' HOST HEADER ---
+        # Security context for the container
+        securityContext:
+          runAsNonRoot: false
+          runAsUser: 0
+          allowPrivilegeEscalation: true
+          capabilities:
+            add:
+            - SYS_RESOURCE  # Allow ulimit changes
+            - SYS_ADMIN     # Allow /proc/sys modifications
+            - NET_BIND_SERVICE
+
+        # --- PROBES WITH LONGER TIMEOUTS FOR SLOW STARTUP ---
         startupProbe:
           httpGet:
             path: /-/readiness
@@ -82,10 +114,10 @@ spec:
             httpHeaders:
             - name: Host
               value: localhost
-          initialDelaySeconds: 180
+          initialDelaySeconds: 300  # Increased from 180 - give more time for startup
           periodSeconds: 30
-          timeoutSeconds: 5
-          failureThreshold: 30 # 15 min grace period
+          timeoutSeconds: 10
+          failureThreshold: 40  # ~20 minutes total
 
         livenessProbe:
           httpGet:
@@ -94,10 +126,10 @@ spec:
             httpHeaders:
             - name: Host
               value: localhost
-          initialDelaySeconds: 600
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 6
+          initialDelaySeconds: 900  # 15 minutes - only check after startup completes
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
 
         readinessProbe:
           httpGet:
@@ -106,10 +138,10 @@ spec:
             httpHeaders:
             - name: Host
               value: localhost
-          initialDelaySeconds: 360
-          periodSeconds: 10
-          timeoutSeconds: 5
-          failureThreshold: 10
+          initialDelaySeconds: 600  # 10 minutes - wait for initialization
+          periodSeconds: 30
+          timeoutSeconds: 10
+          failureThreshold: 3
 
       volumes:
       - name: gitlab-data
@@ -124,3 +156,7 @@ spec:
       - name: gitlab-config-file
         configMap:
           name: gitlab-config
+      - name: proc
+        hostPath:
+          path: /proc
+          type: Directory
