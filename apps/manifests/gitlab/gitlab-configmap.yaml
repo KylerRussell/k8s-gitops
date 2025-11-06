@@ -14,11 +14,15 @@ data:
     node.default['gitlab']['gitaly']['enable'] = false
     node.default['gitlab']['gitaly']['git_data_dirs'] = []
     
-    # CRITICAL: Explicitly skip gitaly recipes to prevent them from running at all
-    # Even with enable=false and empty storage, the recipes still try to create resources
-    skip_recipe 'gitaly::git_data_dirs'
-    skip_recipe 'gitaly::gitaly'
-    skip_recipe 'gitaly'
+    # Pre-create git-data directory to avoid Chef permission errors in Kubernetes
+    # The git_data_dirs recipe will still run but won't fail on permission denied
+    begin
+      Dir.mkdir('/var/opt/gitlab/git-data') unless File.exist?('/var/opt/gitlab/git-data')
+      File.chmod(0o755, '/var/opt/gitlab/git-data')
+    rescue => e
+      # Ignore errors - the directory might already exist or permissions might be restricted
+      puts "Notice: git-data directory handling: #{e.message}"
+    end
     
     # Disable bundled services that aren't needed
     postgresql['enable'] = false
