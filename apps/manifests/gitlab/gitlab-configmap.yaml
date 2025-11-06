@@ -9,13 +9,13 @@ data:
     
     # === CONTAINER ENVIRONMENT OPTIMIZATION ===
     # These settings prevent startup failures in containerized/restricted environments
-    node['gitlab']['bootstrap']['enable'] = true
+    node.default['gitlab']['bootstrap']['enable'] = true
     
     # CRITICAL: Disable system parameter management
     # In restricted Kubernetes, we can't modify /proc/sys or ulimit
     # These warnings can be safely ignored in containers
-    node['gitlab']['manage_kernel_parameters'] = false
-    node['gitlab']['manage_storage_directories']['manage_etc'] = false
+    node.default['gitlab']['manage_kernel_parameters'] = false
+    node.default['gitlab']['manage_storage_directories']['manage_etc'] = false
 
     # === NGINX CONFIGURATION ===
     # Listen on all interfaces for Kubernetes ingress and probes
@@ -141,10 +141,10 @@ data:
     # === CONTAINER STARTUP BEHAVIOR ===
     # These settings help GitLab start properly in containerized environments
     gitlab_rails['rake_cache_clear'] = false
-    node['gitlab']['gitlab-rails']['enable'] = true
-    node['gitlab']['gitaly']['enable'] = false  # Using external DB, not bundled
-    node['gitlab']['git-http-server']['enable'] = false
-    node['gitlab']['puma']['enable'] = true
+    node.default['gitlab']['gitlab-rails']['enable'] = true
+    node.default['gitlab']['gitaly']['enable'] = false  # Using external DB, not bundled
+    node.default['gitlab']['git-http-server']['enable'] = false
+    node.default['gitlab']['puma']['enable'] = true
 
     # === SSL/TLS CONFIGURATION ===
     # SSL/TLS is handled by the ingress controller, not by GitLab
