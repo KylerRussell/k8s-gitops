@@ -137,10 +137,14 @@ data:
     # === CONTAINER STARTUP BEHAVIOR ===
     # These settings help GitLab start properly in containerized environments
     gitlab_rails['rake_cache_clear'] = false
-    node.default['gitlab']['gitlab-rails']['enable'] = true
+    node.default['gitlab']['gitlab_rails']['enable'] = true
     node.default['gitlab']['gitaly']['enable'] = false  # Using external DB, not bundled
     node.default['gitlab']['git-http-server']['enable'] = false
     node.default['gitlab']['puma']['enable'] = true
+    
+    # Disable Gitaly storage validation in containers
+    # Gitaly handles git repository storage - we're not using it in this deployment
+    gitaly['enable'] = false
 
     # === SSL/TLS CONFIGURATION ===
     # SSL/TLS is handled by the ingress controller, not by GitLab
