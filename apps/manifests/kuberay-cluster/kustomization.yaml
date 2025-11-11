@@ -5,6 +5,7 @@ namespace: kuberay-system
 resources:
 - raycluster.yaml
 - ray-dashboard-ingress.yaml
+- ray-serve-ingress.yaml
 
 # Add common labels
 commonLabels:
