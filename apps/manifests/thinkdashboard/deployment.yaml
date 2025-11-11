@@ -18,7 +18,7 @@ spec:
       initContainers:
       - name: init-config
         image: busybox:latest
-        command: ['sh', '-c', 'cp -r /config-source/* /app/data/ 2>/dev/null || true']
+        command: ['sh', '-c', 'cp -rL /config-source/* /app/data/ 2>/dev/null || true']  # Added -L flag
         volumeMounts:
         - name: config-source
           mountPath: /config-source
