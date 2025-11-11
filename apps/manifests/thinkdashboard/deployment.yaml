@@ -15,6 +15,15 @@ spec:
       labels:
         app: thinkdashboard
     spec:
+      initContainers:
+      - name: init-config
+        image: busybox:latest
+        command: ['sh', '-c', 'cp -r /config-source/* /app/data/ 2>/dev/null || true']
+        volumeMounts:
+        - name: config-source
+          mountPath: /config-source
+        - name: data
+          mountPath: /app/data
       containers:
       - name: thinkdashboard
         image: ghcr.io/matiasdesuu/thinkdashboard:latest
@@ -29,7 +38,6 @@ spec:
         volumeMounts:
         - name: data
           mountPath: /app/data
-          readOnly: true
         resources:
           requests:
             memory: "64Mi"
@@ -57,7 +65,9 @@ spec:
           readOnlyRootFilesystem: false
           runAsNonRoot: false
       volumes:
-      - name: data
+      - name: config-source
         configMap:
           name: thinkdashboard-config
+      - name: data
+        emptyDir: {}
       restartPolicy: Always
