@@ -1,0 +1,215 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: thinkdashboard-config
+  namespace: thinkdashboard
+data:
+  bookmarks-1.json: |
+    {
+      "page": {
+        "id": 1,
+        "name": "Homelab"
+      },
+      "categories": [
+        {
+          "id": "kubernetes",
+          "name": "Kubernetes",
+          "originalId": "media"
+        },
+        {
+          "id": "development",
+          "name": "Development",
+          "originalId": "development"
+        },
+        {
+          "id": "monitoring",
+          "name": "Monitoring",
+          "originalId": "social"
+        },
+        {
+          "id": "local-cloud",
+          "name": "Local Cloud",
+          "originalId": "search"
+        },
+        {
+          "id": "utilities",
+          "name": "Utilities",
+          "originalId": "category-5"
+        },
+        {
+          "id": "ai-ml",
+          "name": "AI/ML",
+          "originalId": "category-6"
+        }
+      ],
+      "bookmarks": [
+        {
+          "name": "GitHub",
+          "url": "https://github.com",
+          "shortcut": "GH",
+          "category": "development",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
+          "name": "GitLab",
+          "url": "https://example.com",
+          "shortcut": "GL",
+          "category": "development",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
+          "name": "Coder",
+          "url": "http://code.homelab.com",
+          "shortcut": "CODE",
+          "category": "development",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
+          "name": "ArgoCD",
+          "url": "http://argocd.homelab.com",
+          "shortcut": "A",
+          "category": "kubernetes",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
+          "name": "Headlamp",
+          "url": "http://headlamp.homelab.com",
+          "shortcut": "HL",
+          "category": "kubernetes",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
+          "name": "Harbor",
+          "url": "http://harbor.homelab.com",
+          "shortcut": "HB",
+          "category": "kubernetes",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
+          "name": "Prometheus",
+          "url": "http://prometheus.homelab.com",
+          "shortcut": "P",
+          "category": "monitoring",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
+          "name": "Grafana",
+          "url": "http://grafana.homelab.com",
+          "shortcut": "G",
+          "category": "monitoring",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
+          "name": "Alertmanager",
+          "url": "http://alertmanager.homelab.com",
+          "shortcut": "AM",
+          "category": "monitoring",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
+          "name": "Nextcloud",
+          "url": "http://nextcloud.homelab.com",
+          "shortcut": "NC",
+          "category": "local-cloud",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
+          "name": "Excalidraw",
+          "url": "http://draw.homelab.com",
+          "shortcut": "ED",
+          "category": "local-cloud",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
+          "name": "Open WebUI",
+          "url": "http://ollama.homelab.com",
+          "shortcut": "O",
+          "category": "ai-ml",
+          "checkStatus": false,
+          "icon": ""
+        }
+      ]
+    }
+  colors.json: |
+    {
+      "light": {
+        "textPrimary": "#1F2937",
+        "textSecondary": "#6B7280",
+        "textTertiary": "#9CA3AF",
+        "backgroundPrimary": "#F9FAFB",
+        "backgroundSecondary": "#F3F4F6",
+        "backgroundDots": "#E5E7EB",
+        "backgroundModal": "rgba(255, 255, 255, 0.9)",
+        "borderPrimary": "#D1D5DB",
+        "borderSecondary": "#E5E7EB",
+        "accentSuccess": "#059669",
+        "accentWarning": "#D97706",
+        "accentError": "#DC2626"
+      },
+      "dark": {
+        "textPrimary": "#E5E7EB",
+        "textSecondary": "#9CA3AF",
+        "textTertiary": "#10B981",
+        "backgroundPrimary": "#000",
+        "backgroundSecondary": "#1F2937",
+        "backgroundDots": "#1F2937",
+        "backgroundModal": "rgba(0, 0, 0, 0.8)",
+        "borderPrimary": "#4B5563",
+        "borderSecondary": "#374151",
+        "accentSuccess": "#10B981",
+        "accentWarning": "#F59E0B",
+        "accentError": "#EF4444"
+      },
+      "custom": {}
+    }
+  settings.json: |
+    {
+      "currentPage": 1,
+      "theme": "dark",
+      "openInNewTab": true,
+      "columnsPerRow": 3,
+      "fontSize": "m",
+      "showBackgroundDots": true,
+      "showTitle": true,
+      "showDate": true,
+      "showConfigButton": false,
+      "showSearchButton": true,
+      "showFindersButton": false,
+      "showCommandsButton": false,
+      "showStatus": false,
+      "showPing": false,
+      "showStatusLoading": false,
+      "skipFastPing": false,
+      "globalShortcuts": true,
+      "hyprMode": false,
+      "animationsEnabled": true,
+      "enableCustomTitle": true,
+      "customTitle": "Homelab",
+      "showPageInTitle": true,
+      "showPageNamesInTabs": true,
+      "enableCustomFavicon": false,
+      "customFaviconPath": "",
+      "enableCustomFont": false,
+      "customFontPath": "",
+      "language": "en",
+      "interleaveMode": false,
+      "showPageTabs": true,
+      "enableFuzzySuggestions": false,
+      "fuzzySuggestionsStartWith": false,
+      "keepSearchOpenWhenEmpty": false,
+      "showIcons": false,
+      "includeFindersInSearch": false
+    }
+  finders.json: |
+    []
