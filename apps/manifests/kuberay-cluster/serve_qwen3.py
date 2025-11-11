@@ -390,7 +390,7 @@ frontend_deployment = Frontend.bind(Shard1.bind(), Shard2.bind(), Shard3.bind())
 openai_endpoint = OpenAIEndpoint.bind(frontend_deployment)
 
 print("Running serve application with OpenAI endpoint...")
-serve.run(openai_endpoint, name="default", route_prefix="/v1")
+serve.run(openai_endpoint)
 
 # Keep the job alive
 while True:

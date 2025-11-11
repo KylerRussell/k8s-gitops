@@ -23,9 +23,28 @@ spec:
     rayStartParams:
       dashboard-host: "0.0.0.0"
       num-cpus: "55"
-      memory: "257698037760" # 240Gi in bytes
+      memory: "257698037760"
       metrics-export-port: "8080"
-      object-store-memory: "128849018880" # 120Gi
+      object-store-memory: "128849018880"
+    # ADD THIS SECTION:
+    service:
+      ports:
+        - port: 6379
+          name: gcs
+          targetPort: 6379
+        - port: 8265
+          name: dashboard
+          targetPort: 8265
+        - port: 10001
+          name: client
+          targetPort: 10001
+        - port: 8080
+          name: metrics
+          targetPort: 8080
+        - port: 8000
+          name: serve
+          targetPort: 8000
+    # END NEW SECTION
     template:
       metadata:
         labels:
