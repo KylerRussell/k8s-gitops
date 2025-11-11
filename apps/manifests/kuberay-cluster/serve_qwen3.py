@@ -15,8 +15,11 @@ SHARD_3_LAYERS = NUM_LAYERS - SHARD_1_LAYERS - SHARD_2_LAYERS
 
 def find_checkpoint_format(model_path):
     """Find which checkpoint format is available."""
-    # Check for safetensors (fastest)
-    if os.path.exists(os.path.join(model_path, "model.safetensors")):
+    # Check for sharded safetensors (most common for large models)
+    if os.path.exists(os.path.join(model_path, "model.safetensors.index.json")):
+        return "sharded_safetensors"
+    # Check for single safetensors file
+    elif os.path.exists(os.path.join(model_path, "model.safetensors")):
         return "safetensors"
     # Check for bin files
     elif os.path.exists(os.path.join(model_path, "pytorch_model.bin")):
@@ -37,7 +40,7 @@ def load_shard_selective(model, checkpoint_path, start_layer, end_layer, is_last
     print(f"Using checkpoint format: {checkpoint_format}")
     print(f"Loading layers {start_layer}-{end_layer-1}...")
     
-    if checkpoint_format == "safetensors":
+    if checkpoint_format in ["safetensors", "sharded_safetensors"]:
         # Read the index.json to find which shards contain which tensors
         index_file = os.path.join(checkpoint_path, "model.safetensors.index.json")
         if os.path.exists(index_file):
