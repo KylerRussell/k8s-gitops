@@ -4,6 +4,9 @@ from transformers import AutoConfig, AutoTokenizer, AutoModelForCausalLM
 import torch
 import os
 import time
+from typing import Optional, List, Dict, Any
+from pydantic import BaseModel
+import json
 
 # ============================================================================
 # FIX: Patch torch.autocast to handle CPU-only inference with bfloat16
@@ -33,6 +36,27 @@ NUM_LAYERS = MODEL_CONFIG.num_hidden_layers
 SHARD_1_LAYERS = 31
 SHARD_2_LAYERS = 31
 SHARD_3_LAYERS = NUM_LAYERS - SHARD_1_LAYERS - SHARD_2_LAYERS
+
+# --- OpenAI API Models ---
+class ChatMessage(BaseModel):
+    role: str
+    content: str
+
+class ChatCompletionRequest(BaseModel):
+    model: str
+    messages: List[ChatMessage]
+    temperature: Optional[float] = 0.7
+    top_p: Optional[float] = 0.9
+    max_tokens: Optional[int] = 100
+    stream: Optional[bool] = False
+
+class ChatCompletionResponse(BaseModel):
+    id: str
+    object: str = "chat.completion"
+    created: int
+    model: str
+    choices: List[Dict[str, Any]]
+    usage: Dict[str, int]
 
 def find_checkpoint_format(model_path):
     """Find which checkpoint format is available."""
@@ -208,12 +232,165 @@ class Frontend:
         print("Frontend: Generation complete.")
         return self.tokenizer.decode(generated_ids, skip_special_tokens=True)
 
+# --- OpenAI API HTTP Endpoint ---
+@serve.deployment(ray_actor_options={"num_cpus": 1})
+class OpenAIEndpoint:
+    """OpenAI-compatible API endpoint for OpenWebUI integration."""
+    
+    def __init__(self, frontend: "Frontend"):
+        self.frontend = frontend
+        self.model_name = "qwen3-235b"
+        print("[OpenAI] Endpoint initialized")
+    
+    async def __call__(self, request):
+        """Handle HTTP requests."""
+        if request.method == "GET":
+            if request.url.path == "/v1/models":
+                return self._list_models()
+            elif request.url.path == "/health":
+                return {"status": "ok"}
+            else:
+                return {"error": "Not found"}, 404
+        
+        elif request.method == "POST":
+            if request.url.path == "/v1/chat/completions":
+                return await self._chat_completions(request)
+            elif request.url.path == "/v1/completions":
+                return await self._completions(request)
+            else:
+                return {"error": "Not found"}, 404
+        
+        return {"error": "Method not allowed"}, 405
+    
+    def _list_models(self):
+        """List available models (OpenAI API format)."""
+        return {
+            "object": "list",
+            "data": [
+                {
+                    "id": self.model_name,
+                    "object": "model",
+                    "created": int(time.time()),
+                    "owned_by": "local",
+                }
+            ]
+        }
+    
+    async def _chat_completions(self, request):
+        """Handle /v1/chat/completions requests."""
+        try:
+            body = await request.json()
+            
+            # Extract messages and convert to prompt
+            messages = body.get("messages", [])
+            prompt = self._format_chat_prompt(messages)
+            max_tokens = body.get("max_tokens", 100)
+            
+            print(f"[OpenAI] Chat completion request: {prompt[:100]}...")
+            
+            # Call the model
+            response_text = await self.frontend.generate(prompt, max_tokens)
+            
+            print(f"[OpenAI] Generated: {response_text[:100]}...")
+            
+            # Format response in OpenAI format
+            return {
+                "id": f"chatcmpl-{int(time.time())}",
+                "object": "chat.completion",
+                "created": int(time.time()),
+                "model": self.model_name,
+                "choices": [
+                    {
+                        "index": 0,
+                        "message": {
+                            "role": "assistant",
+                            "content": response_text
+                        },
+                        "finish_reason": "stop"
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": len(prompt.split()),
+                    "completion_tokens": len(response_text.split()),
+                    "total_tokens": len(prompt.split()) + len(response_text.split())
+                }
+            }
+        except Exception as e:
+            print(f"[OpenAI] Error: {e}")
+            return {
+                "error": {
+                    "message": str(e),
+                    "type": "internal_error",
+                    "param": None,
+                    "code": "internal_error"
+                }
+            }, 500
+    
+    async def _completions(self, request):
+        """Handle /v1/completions requests."""
+        try:
+            body = await request.json()
+            
+            prompt = body.get("prompt", "")
+            max_tokens = body.get("max_tokens", 100)
+            
+            print(f"[OpenAI] Completion request: {prompt[:100]}...")
+            
+            # Call the model
+            response_text = await self.frontend.generate(prompt, max_tokens)
+            
+            print(f"[OpenAI] Generated: {response_text[:100]}...")
+            
+            # Format response
+            return {
+                "id": f"cmpl-{int(time.time())}",
+                "object": "text_completion",
+                "created": int(time.time()),
+                "model": self.model_name,
+                "choices": [
+                    {
+                        "text": response_text,
+                        "index": 0,
+                        "logprobs": None,
+                        "finish_reason": "stop"
+                    }
+                ],
+                "usage": {
+                    "prompt_tokens": len(prompt.split()),
+                    "completion_tokens": len(response_text.split()),
+                    "total_tokens": len(prompt.split()) + len(response_text.split())
+                }
+            }
+        except Exception as e:
+            print(f"[OpenAI] Error: {e}")
+            return {
+                "error": {
+                    "message": str(e),
+                    "type": "internal_error",
+                    "param": None,
+                    "code": "internal_error"
+                }
+            }, 500
+    
+    def _format_chat_prompt(self, messages: List[Dict]) -> str:
+        """Convert chat messages to a prompt string."""
+        prompt_parts = []
+        for msg in messages:
+            role = msg.get("role", "user")
+            content = msg.get("content", "")
+            prompt_parts.append(f"{role}: {content}")
+        
+        # Add assistant prefix for the model to complete
+        prompt = "\n".join(prompt_parts) + "\nassistant:"
+        return prompt
+
 # --- Application Setup ---
 print("Binding deployments...")
-app = Frontend.bind(Shard1.bind(), Shard2.bind(), Shard3.bind())
+frontend_deployment = Frontend.bind(Shard1.bind(), Shard2.bind(), Shard3.bind())
+openai_endpoint = OpenAIEndpoint.bind(frontend_deployment)
 
-print("Running serve application...")
-serve.run(app)
+print("Running serve application with OpenAI endpoint...")
+serve.run(openai_endpoint, name="default", route_prefix="/v1")
 
 # Keep the job alive
 while True:
