@@ -4,7 +4,6 @@ from transformers import AutoConfig, AutoTokenizer, AutoModelForCausalLM
 import torch
 import os
 import time
-from safetensors.torch import safe_open
 
 # --- Configuration ---
 MODEL_PATH = "/models/Qwen3-235B-A22B-Thinking-2507"
@@ -30,6 +29,8 @@ def load_shard_selective(model, checkpoint_path, start_layer, end_layer, is_last
     Load ONLY the layers needed for this shard from checkpoint.
     This avoids loading the entire 470GB model.
     """
+    from safetensors.torch import safe_open
+    
     checkpoint_format = find_checkpoint_format(checkpoint_path)
     state_dict = {}
     

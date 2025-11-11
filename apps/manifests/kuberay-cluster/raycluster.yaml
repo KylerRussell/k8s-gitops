@@ -23,7 +23,7 @@ spec:
     rayStartParams:
       dashboard-host: "0.0.0.0"
       num-cpus: "55"
-      memory: "236223201280" # 220Gi in bytes
+      memory: "257698037760" # 240Gi in bytes
       metrics-export-port: "8080"
       object-store-memory: "128849018880" # 120Gi
     template:
@@ -68,10 +68,10 @@ spec:
             resources:
               limits:
                 cpu: "60"
-                memory: "220Gi"
+                memory: "240Gi"
               requests:
                 cpu: "55"
-                memory: "220Gi"
+                memory: "240Gi"
             ports:
               - containerPort: 6379
                 name: gcs
@@ -183,10 +183,10 @@ spec:
               resources:
                 limits:
                   cpu: "60"
-                  memory: "220Gi"
+                  memory: "240Gi"
                 requests:
                   cpu: "55"
-                  memory: "220Gi"
+                  memory: "240Gi"
               ports:
                 - containerPort: 8080
                   name: metrics
