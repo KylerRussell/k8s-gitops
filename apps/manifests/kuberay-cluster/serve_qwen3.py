@@ -27,13 +27,12 @@ def find_checkpoint_format(model_path):
 def load_shard_selective(model, checkpoint_path, start_layer, end_layer, is_last_shard):
     """
     Load ONLY the layers needed for this shard from sharded safetensors checkpoint.
-    Reads the index.json to determine which shards contain our layers.
+    Model should be on meta device before calling this.
     """
     from safetensors.torch import safe_open
     import json
     
     checkpoint_format = find_checkpoint_format(checkpoint_path)
-    state_dict = {}
     
     print(f"Using checkpoint format: {checkpoint_format}")
     print(f"Loading layers {start_layer}-{end_layer-1}...")
@@ -46,14 +45,13 @@ def load_shard_selective(model, checkpoint_path, start_layer, end_layer, is_last
             with open(index_file, 'r') as f:
                 index_data = json.load(f)
             
-            # index_data["weight_map"] maps tensor names to shard files
             weight_map = index_data.get("weight_map", {})
             
             # Determine which tensors we need
             tensors_needed = set()
             
             # Embeddings (only on first shard)
-            if start_layer == 0:
+            if start_layer == 0 and "model.embed_tokens.weight" in weight_map:
                 tensors_needed.add("model.embed_tokens.weight")
             
             # Layers for this shard
@@ -76,47 +74,26 @@ def load_shard_selective(model, checkpoint_path, start_layer, end_layer, is_last
                     shard_file = weight_map[tensor_name]
                     shards_needed.add(shard_file)
             
-            print(f"Need {len(tensors_needed)} tensors from {len(shards_needed)} shard files")
+            print(f"Need {len(tensors_needed)} tensors from {len(shards_needed)} shard files (~{len(shards_needed)*3.8:.0f}GB)")
             
             # Load tensors from needed shards only
+            state_dict = {}
             for shard_idx, shard_file in enumerate(sorted(shards_needed), 1):
                 shard_path = os.path.join(checkpoint_path, shard_file)
-                print(f"  Loading shard {shard_idx}/{len(shards_needed)}: {shard_file}")
+                print(f"  Shard {shard_idx}/{len(shards_needed)}: {shard_file}")
                 
                 with safe_open(shard_path, framework="pt", device="cpu") as f:
                     shard_keys = f.keys()
                     for key in shard_keys:
                         if key in tensors_needed:
                             state_dict[key] = f.get_tensor(key)
+            
+            # Load state dict - model will move from meta to CPU
+            print(f"Loading {len(state_dict)} tensors into model...")
+            model.load_state_dict(state_dict, strict=False)
         else:
-            # Fallback: try loading single model.safetensors
-            print("No index.json found, trying single model.safetensors...")
-            checkpoint_file = os.path.join(checkpoint_path, "model.safetensors")
-            if os.path.exists(checkpoint_file):
-                with safe_open(checkpoint_file, framework="pt", device="cpu") as f:
-                    keys = f.keys()
-                    
-                    # Load embedding layer (only on first shard)
-                    if start_layer == 0 and "model.embed_tokens.weight" in keys:
-                        state_dict["model.embed_tokens.weight"] = f.get_tensor("model.embed_tokens.weight")
-                    
-                    # Load only the layers for this shard
-                    for i in range(start_layer, end_layer):
-                        layer_prefix = f"model.layers.{i}."
-                        for key in keys:
-                            if key.startswith(layer_prefix):
-                                state_dict[key] = f.get_tensor(key)
-                    
-                    # Load final components (only on last shard)
-                    if is_last_shard:
-                        if "model.norm.weight" in keys:
-                            state_dict["model.norm.weight"] = f.get_tensor("model.norm.weight")
-                        if "lm_head.weight" in keys:
-                            state_dict["lm_head.weight"] = f.get_tensor("lm_head.weight")
+            raise ValueError(f"No index.json found at {index_file}")
     
-    # Load state dict into model
-    print(f"Assigning {len(state_dict)} tensors to model...")
-    model.load_state_dict(state_dict, strict=False)
     return model
 
 class ModelShard:
@@ -128,13 +105,14 @@ class ModelShard:
         
         start_time = time.time()
         
-        # Initialize empty model (no weights yet)
-        print("Creating empty model structure...")
-        model = AutoModelForCausalLM.from_config(
-            MODEL_CONFIG, 
-            torch_dtype=torch.bfloat16,
-            trust_remote_code=True
-        )
+        # Initialize model on meta device (no memory allocated)
+        print("Creating model on meta device (no memory allocation)...")
+        with torch.device("meta"):
+            model = AutoModelForCausalLM.from_config(
+                MODEL_CONFIG, 
+                torch_dtype=torch.bfloat16,
+                trust_remote_code=True
+            )
         
         # Load only this shard's weights from checkpoint
         print("Loading selective weights from checkpoint...")
