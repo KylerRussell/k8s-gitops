@@ -1,0 +1,20 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: thinkdashboard
+  namespace: thinkdashboard
+  labels:
+    app: thinkdashboard
+spec:
+  ingressClassName: nginx
+  rules:
+  - host: home.homelab.com
+    http:
+      paths:
+      - path: /
+        pathType: Prefix
+        backend:
+          service:
+            name: thinkdashboard
+            port:
+              number: 80
