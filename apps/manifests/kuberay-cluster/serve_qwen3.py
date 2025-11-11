@@ -5,6 +5,27 @@ import torch
 import os
 import time
 
+# ============================================================================
+# FIX: Patch torch.autocast to handle CPU-only inference with bfloat16
+# ============================================================================
+print("[PATCH] Applying torch.autocast CPU patch...")
+original_autocast = torch.autocast
+
+def patched_autocast(*args, device_type=None, **kwargs):
+    """
+    On CPU, torch.autocast doesn't properly support bfloat16.
+    This patch returns a no-op context manager for CPU to avoid the 
+    'unsupported scalarType' error while keeping all computations on CPU.
+    """
+    if device_type == 'cpu':
+        from contextlib import nullcontext
+        return nullcontext()
+    return original_autocast(*args, device_type=device_type, **kwargs)
+
+torch.autocast = patched_autocast
+print("[PATCH] torch.autocast patched successfully ✓")
+# ============================================================================
+
 # --- Configuration ---
 MODEL_PATH = "/models/Qwen3-235B-A22B-Thinking-2507"
 MODEL_CONFIG = AutoConfig.from_pretrained(MODEL_PATH, trust_remote_code=True)
