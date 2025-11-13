@@ -47,6 +47,9 @@ spec:
           server:
             persistentVolume:
               storageClass: local-path
+        # Disable the upgrade check hook to prevent sync failures
+        upgradeCheck:
+          enabled: false
   # Secondary source: GitOps manifests for additional resources
   - repoURL: https://github.com/KylerRussell/k8s-gitops.git
     targetRevision: main
