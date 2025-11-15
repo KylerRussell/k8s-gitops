@@ -53,7 +53,7 @@ data:
         },
         {
           "name": "GitLab",
-          "url": "https://example.com",
+          "url": "http://gitlab.homelab.com",
           "shortcut": "GL",
           "category": "development",
           "checkStatus": false,
