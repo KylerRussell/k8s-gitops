@@ -14,10 +14,15 @@ spec:
     helm:
       releaseName: gitlab
       valuesObject:
+        # Force the upgrade check to pass - this is a fresh install
+        upgradeCheck:
+          enabled: false
+        
         gitlab:
           gitaly:
             persistence:
               storageClass: local-path
+              size: 10Gi
         
         gitlab-runner:
           install: false
@@ -35,6 +40,7 @@ spec:
         minio:
           persistence:
             storageClass: local-path
+            size: 10Gi
         
         nginx-ingress:
           enabled: false
@@ -43,11 +49,13 @@ spec:
           primary:
             persistence:
               storageClass: local-path
+              size: 10Gi
         
         redis:
           master:
             persistence:
               storageClass: local-path
+              size: 1Gi
   
   destination:
     server: https://kubernetes.default.svc
