@@ -14,12 +14,19 @@ spec:
     helm:
       releaseName: gitlab
       valuesObject:
+        # Skip upgrade path check for fresh install
+        migrations:
+          backup:
+            enabled: false
+        
         gitlab:
           gitaly:
             persistence:
               storageClass: local-path
+        
         gitlab-runner:
           install: false
+        
         global:
           hosts:
             domain: homelab.com
@@ -29,26 +36,36 @@ spec:
             configureCertmanager: false
             tls:
               enabled: false
+          initialRootPassword:
+            secret: gitlab-secrets
+            key: gitlab-root-password
+        
         minio:
           persistence:
             storageClass: local-path
+        
         nginx-ingress:
           enabled: false
+        
         postgresql:
           primary:
             persistence:
               storageClass: local-path
+        
         prometheus:
           server:
             persistentVolume:
               storageClass: local-path
+        
         redis:
           master:
             persistence:
               storageClass: local-path
+  
   destination:
     server: https://kubernetes.default.svc
     namespace: gitlab
+  
   syncPolicy:
     automated:
       prune: true
