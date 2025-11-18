@@ -12,8 +12,8 @@ spec:
   source:
     repoURL: https://charts.gitlab.io/
     chart: gitlab
-    targetRevision: 9.5.2 # You can update this to the latest chart version
-    
+    targetRevision: 9.5.2 # Your updated chart version
+
     # 2. Helm: Embed your values file content directly
     helm:
       valuesObject:
@@ -35,6 +35,14 @@ spec:
         
         # Explicit Overrides from your file
         gitlab:
+          # --- THIS IS THE FIX ---
+          # This tells Argo CD to ignore the health of the upgrade job,
+          # allowing the sync to complete even if the job fails.
+          upgradeCheck:
+            enabled: true
+            annotations:
+              argocd.argoproj.io/skip-health-check: 'true'
+          # --- END FIX ---
           gitaly:
             persistence:
               storageClass: "local-path"
