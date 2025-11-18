@@ -5,5 +5,4 @@ namespace: gitlab
 
 resources:
   - gitlab-namespace.yaml
-  - gitlab-helm-app.yaml
   - gitlab-sealedsecret.yaml

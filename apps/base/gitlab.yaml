@@ -8,9 +8,44 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://github.com/KylerRussell/k8s-gitops.git
-    targetRevision: main
-    path: apps/manifests/gitlab
+    repoURL: https://charts.gitlab.io
+    chart: gitlab
+    targetRevision: 9.5.2
+    helm:
+      releaseName: gitlab
+      valuesObject:
+        gitlab:
+          gitaly:
+            persistence:
+              storageClass: local-path
+        gitlab-runner:
+          install: false
+        global:
+          hosts:
+            domain: homelab.com
+            https: false
+          ingress:
+            class: nginx
+            configureCertmanager: false
+            tls:
+              enabled: false
+        minio:
+          persistence:
+            storageClass: local-path
+        nginx-ingress:
+          enabled: false
+        postgresql:
+          primary:
+            persistence:
+              storageClass: local-path
+        prometheus:
+          server:
+            persistentVolume:
+              storageClass: local-path
+        redis:
+          master:
+            persistence:
+              storageClass: local-path
   destination:
     server: https://kubernetes.default.svc
     namespace: gitlab
@@ -21,6 +56,7 @@ spec:
       allowEmpty: false
     syncOptions:
     - CreateNamespace=true
+    - ServerSideApply=true
     retry:
       limit: 5
       backoff:
