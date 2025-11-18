@@ -46,32 +46,26 @@ spec:
           enabled: false
         
         postgresql:
+          image:
+            repository: postgres
+            tag: "14"
           primary:
             persistence:
               storageClass: local-path
               size: 10Gi
         
         redis:
+          image:
+            repository: redis
+            tag: "6-alpine"
           master:
             persistence:
               storageClass: local-path
               size: 1Gi
-  
-  destination:
-    server: https://kubernetes.default.svc
-    namespace: gitlab
-  
-  syncPolicy:
-    automated:
-      prune: true
-      selfHeal: true
-      allowEmpty: false
-    syncOptions:
-    - CreateNamespace=true
-    - ServerSideApply=true
-    retry:
-      limit: 5
-      backoff:
-        duration: 5s
-        factor: 2
-        maxDuration: 3m
+        
+        prometheus:
+          install: true
+          server:
+            persistentVolume:
+              storageClass: local-path
+              size: 5Gi
