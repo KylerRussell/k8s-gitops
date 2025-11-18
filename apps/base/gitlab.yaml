@@ -46,18 +46,12 @@ spec:
           enabled: false
         
         postgresql:
-          image:
-            repository: postgres
-            tag: "14"
           primary:
             persistence:
               storageClass: local-path
               size: 10Gi
         
         redis:
-          image:
-            repository: redis
-            tag: "6-alpine"
           master:
             persistence:
               storageClass: local-path
