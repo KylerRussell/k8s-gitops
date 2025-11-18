@@ -10,15 +10,10 @@ spec:
   source:
     repoURL: https://charts.gitlab.io
     chart: gitlab
-    targetRevision: 9.5.2
+    targetRevision: 7.11.5
     helm:
       releaseName: gitlab
       valuesObject:
-        # Skip upgrade path check for fresh install
-        migrations:
-          backup:
-            enabled: false
-        
         gitlab:
           gitaly:
             persistence:
@@ -36,9 +31,6 @@ spec:
             configureCertmanager: false
             tls:
               enabled: false
-          initialRootPassword:
-            secret: gitlab-secrets
-            key: gitlab-root-password
         
         minio:
           persistence:
@@ -50,11 +42,6 @@ spec:
         postgresql:
           primary:
             persistence:
-              storageClass: local-path
-        
-        prometheus:
-          server:
-            persistentVolume:
               storageClass: local-path
         
         redis:
