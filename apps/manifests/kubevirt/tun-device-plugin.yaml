@@ -47,8 +47,7 @@ metadata:
   namespace: kubevirt
 data:
   config.yaml: |
-    config:
-      - name: "tun"
-        groups:
-          - paths:
-              - path: "/dev/net/tun"
+    - name: "tun"
+      groups:
+        - paths:
+            - path: "/dev/net/tun"
