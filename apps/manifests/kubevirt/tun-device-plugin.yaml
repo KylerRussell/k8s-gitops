@@ -51,4 +51,4 @@ data:
       - name: "tun"
         groups:
           - paths:
-              - "/dev/net/tun"
+              - path: "/dev/net/tun"
