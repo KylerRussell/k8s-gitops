@@ -20,15 +20,8 @@ spec:
         fsGroup: 1000
       containers:
         - name: webtop
-          image: lscr.io/linuxserver/webtop:ubuntu-xfce
+          image: lscr.io/linuxserver/webtop:alpine-xfce
           imagePullPolicy: IfNotPresent
-          # Mask login1 to prevent XFCE from trying to activate systemd (fixes black screen)
-          command:
-            [
-              "/bin/bash",
-              "-c",
-              "rm -f /usr/share/dbus-1/system-services/org.freedesktop.login1.service && /init",
-            ]
           env:
             - name: PUID
               value: "1000"
@@ -44,8 +37,7 @@ spec:
               name: ssh
               protocol: TCP
           securityContext:
-            privileged: true # Required for desktop session management
-            runAsUser: 0 # Ensure s6-overlay starts as root to fix permissions
+            privileged: true # Kept as it may be needed for Talos, but Alpine is generally cleaner
           volumeMounts:
             - name: data
               mountPath: /config
