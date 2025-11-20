@@ -16,12 +16,17 @@ spec:
       labels:
         app: webtop
     spec:
-      securityContext:
-        fsGroup: 1000
       containers:
         - name: webtop
           image: lscr.io/linuxserver/webtop:ubuntu-xfce
           imagePullPolicy: IfNotPresent
+          # Mask login1 to prevent XFCE from trying to activate systemd (fixes black screen)
+          command:
+            [
+              "/bin/bash",
+              "-c",
+              "rm -f /usr/share/dbus-1/system-services/org.freedesktop.login1.service && /init",
+            ]
           env:
             - name: PUID
               value: "1000"
@@ -44,8 +49,6 @@ spec:
               mountPath: /config
             - name: dshm
               mountPath: /dev/shm
-            - name: tmp
-              mountPath: /tmp
           resources:
             requests:
               cpu: "4"
@@ -58,8 +61,6 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 2Gi
-        - name: tmp
-          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: data
