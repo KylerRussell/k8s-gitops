@@ -20,7 +20,7 @@ spec:
         fsGroup: 1000
       containers:
         - name: webtop
-          image: lscr.io/linuxserver/webtop:alpine-xfce
+          image: lscr.io/linuxserver/webtop:latest
           imagePullPolicy: IfNotPresent
           env:
             - name: PUID
