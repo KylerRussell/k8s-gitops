@@ -1,0 +1,54 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: tun-device-plugin
+  namespace: kubevirt
+  labels:
+    app: tun-device-plugin
+spec:
+  selector:
+    matchLabels:
+      app: tun-device-plugin
+  template:
+    metadata:
+      labels:
+        app: tun-device-plugin
+    spec:
+      priorityClassName: system-node-critical
+      tolerations:
+        - operator: "Exists"
+          effect: "NoSchedule"
+      containers:
+        - name: device-plugin
+          image: ghcr.io/squat/generic-device-plugin:latest
+          args:
+            - --domain=devices.kubevirt.io
+            - --config=/etc/generic-device-plugin/config.yaml
+          securityContext:
+            privileged: true
+          volumeMounts:
+            - name: dev
+              mountPath: /dev
+            - name: config
+              mountPath: /etc/generic-device-plugin/config.yaml
+              subPath: config.yaml
+      volumes:
+        - name: dev
+          hostPath:
+            path: /dev
+        - name: config
+          configMap:
+            name: tun-device-plugin-config
+---
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: tun-device-plugin-config
+  namespace: kubevirt
+data:
+  config.yaml: |
+    config:
+      - name: "tun"
+        groups:
+          - paths:
+              - "/dev/net/tun"

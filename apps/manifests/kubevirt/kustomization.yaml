@@ -3,3 +3,4 @@ kind: Kustomization
 resources:
   - kubevirt-operator.yaml
   - kubevirt-cr.yaml
+  - tun-device-plugin.yaml
