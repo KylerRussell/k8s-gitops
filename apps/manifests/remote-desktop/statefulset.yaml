@@ -34,17 +34,25 @@ spec:
             - containerPort: 22
               name: ssh
               protocol: TCP
+          securityContext:
+            privileged: true # Required for desktop session management
           volumeMounts:
             - name: data
               mountPath: /config
+            - name: dshm
+              mountPath: /dev/shm
           resources:
             requests:
-              cpu: 4000m
-              memory: 16Gi
+              cpu: "4"
+              memory: "16Gi"
             limits:
-              cpu: 16000m
-              memory: 32Gi
-          shmSize: 2Gi # Important for desktop environments
+              cpu: "16"
+              memory: "32Gi"
+      volumes:
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 2Gi
   volumeClaimTemplates:
     - metadata:
         name: data
