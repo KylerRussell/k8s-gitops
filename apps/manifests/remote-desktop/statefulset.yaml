@@ -16,6 +16,8 @@ spec:
       labels:
         app: webtop
     spec:
+      securityContext:
+        fsGroup: 1000
       containers:
         - name: webtop
           image: lscr.io/linuxserver/webtop:ubuntu-xfce
@@ -36,11 +38,14 @@ spec:
               protocol: TCP
           securityContext:
             privileged: true # Required for desktop session management
+            runAsUser: 0 # Ensure s6-overlay starts as root to fix permissions
           volumeMounts:
             - name: data
               mountPath: /config
             - name: dshm
               mountPath: /dev/shm
+            - name: tmp
+              mountPath: /tmp
           resources:
             requests:
               cpu: "4"
@@ -53,6 +58,8 @@ spec:
           emptyDir:
             medium: Memory
             sizeLimit: 2Gi
+        - name: tmp
+          emptyDir: {}
   volumeClaimTemplates:
     - metadata:
         name: data
