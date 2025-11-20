@@ -1,0 +1,56 @@
+apiVersion: kubevirt.io/v1
+kind: VirtualMachine
+metadata:
+  name: remote-dev-vm
+  namespace: remote-dev-vm
+  labels:
+    app: remote-dev-vm
+spec:
+  running: true
+  template:
+    metadata:
+      labels:
+        app: remote-dev-vm
+    spec:
+      domain:
+        cpu:
+          cores: 4
+        devices:
+          disks:
+            - disk:
+                bus: virtio
+              name: containerdisk
+            - disk:
+                bus: virtio
+              name: cloudinitdisk
+          interfaces:
+            - masquerade: {}
+              name: default
+        resources:
+          requests:
+            memory: 16Gi
+      networks:
+        - name: default
+          pod: {}
+      volumes:
+        - containerDisk:
+            image: quay.io/containerdisks/ubuntu:22.04
+          name: containerdisk
+        - cloudInitNoCloud:
+            userData: |
+              #cloud-config
+              password: password
+              chpasswd: { expire: False }
+              ssh_pwauth: True
+              packages:
+                - openssh-server
+                - curl
+                - git
+                - build-essential
+              runcmd:
+                - curl -fsSL https://code-server.dev/install.sh | sh
+                - systemctl enable --now code-server@ubuntu
+                - sed -i 's/127.0.0.1/0.0.0.0/' /lib/systemd/system/code-server@.service
+                - systemctl daemon-reload
+                - systemctl restart code-server@ubuntu
+          name: cloudinitdisk
