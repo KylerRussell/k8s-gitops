@@ -23,7 +23,7 @@ spec:
           image: ghcr.io/squat/generic-device-plugin:latest
           args:
             - --domain=devices.kubevirt.io
-            - --device={"name": "tun", "groups": [{"paths": [{"path": "/dev/net/tun"}]}]}
+            - '--device={"name": "tun", "groups": [{"paths": [{"path": "/dev/net/tun"}]}]}'
           securityContext:
             privileged: true
           volumeMounts:
