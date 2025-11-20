@@ -8,7 +8,7 @@ metadata:
 spec:
   ingressClassName: nginx
   rules:
-    - host: remote-dev.local
+    - host: remote.homelab.com
       http:
         paths:
           - path: /
