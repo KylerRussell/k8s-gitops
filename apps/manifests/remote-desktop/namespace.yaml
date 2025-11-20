@@ -4,3 +4,7 @@ metadata:
   name: remote-desktop
   labels:
     name: remote-desktop
+    # Allow privileged containers (required for Webtop/Desktop environment)
+    pod-security.kubernetes.io/enforce: privileged
+    pod-security.kubernetes.io/audit: privileged
+    pod-security.kubernetes.io/warn: privileged
