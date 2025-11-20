@@ -1,0 +1,23 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: webtop
+  namespace: remote-desktop
+  annotations:
+    # Websocket support for KasmVNC
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
+    nginx.ingress.kubernetes.io/websocket-services: "webtop"
+spec:
+  ingressClassName: nginx
+  rules:
+    - host: desktop.homelab.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: webtop
+                port:
+                  number: 3000

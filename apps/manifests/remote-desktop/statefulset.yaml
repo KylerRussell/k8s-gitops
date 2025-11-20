@@ -1,0 +1,56 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: webtop
+  namespace: remote-desktop
+  labels:
+    app: webtop
+spec:
+  serviceName: webtop
+  replicas: 1
+  selector:
+    matchLabels:
+      app: webtop
+  template:
+    metadata:
+      labels:
+        app: webtop
+    spec:
+      containers:
+        - name: webtop
+          image: lscr.io/linuxserver/webtop:ubuntu-xfce
+          imagePullPolicy: IfNotPresent
+          env:
+            - name: PUID
+              value: "1000"
+            - name: PGID
+              value: "1000"
+            - name: TZ
+              value: "Etc/UTC"
+          ports:
+            - containerPort: 3000
+              name: http
+              protocol: TCP
+            - containerPort: 22
+              name: ssh
+              protocol: TCP
+          volumeMounts:
+            - name: data
+              mountPath: /config
+          resources:
+            requests:
+              cpu: "4000m"
+              memory: "16Gi"
+            limits:
+              cpu: "16000m"
+              memory: "32Gi"
+          shmSize: "2Gi" # Important for desktop environments
+  volumeClaimTemplates:
+    - metadata:
+        name: data
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        storageClassName: "local-path"
+        resources:
+          requests:
+            storage: 100Gi
