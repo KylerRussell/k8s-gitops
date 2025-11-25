@@ -43,6 +43,10 @@ spec:
               value: "low"
             - name: KASM_SVC_enc_quality
               value: "low"
+            - name: KASM_SVC_framerate
+              value: "30"
+            - name: KASM_SVC_lossless_mode
+              value: "false"
           ports:
             - containerPort: 3000
               name: http
