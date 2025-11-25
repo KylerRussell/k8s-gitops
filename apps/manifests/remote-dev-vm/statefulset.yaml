@@ -19,6 +19,7 @@ spec:
       containers:
         - name: webtop
           securityContext:
+            privileged: true
             seccompProfile:
               type: Unconfined
           image: lscr.io/linuxserver/webtop:ubuntu-xfce
