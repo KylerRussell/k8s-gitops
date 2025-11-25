@@ -7,8 +7,13 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
     nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
     nginx.ingress.kubernetes.io/websocket-services: "remote-dev-vm"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
 spec:
   ingressClassName: nginx
+  tls:
+    - hosts:
+        - remote-dev.homelab.com
+      secretName: remote-dev-vm-tls
   rules:
     - host: remote-dev.homelab.com
       http:
