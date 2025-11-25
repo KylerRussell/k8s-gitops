@@ -39,17 +39,13 @@ spec:
             - mountPath: /dev/shm
               name: dshm
           readinessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: 6901
-              scheme: HTTPS
             initialDelaySeconds: 10
             periodSeconds: 10
           livenessProbe:
-            httpGet:
-              path: /
+            tcpSocket:
               port: 6901
-              scheme: HTTPS
             initialDelaySeconds: 30
             periodSeconds: 30
           resources:
