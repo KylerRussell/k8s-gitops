@@ -132,6 +132,14 @@ data:
           "icon": ""
         },
         {
+          "name": "Remote VM",
+          "url": "https://remote-dev.homelab.com",
+          "shortcut": "RVM",
+          "category": "local-cloud",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
           "name": "Open WebUI",
           "url": "http://ollama.homelab.com",
           "shortcut": "O",
