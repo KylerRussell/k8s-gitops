@@ -22,42 +22,36 @@ spec:
             privileged: true
             seccompProfile:
               type: Unconfined
-          image: lscr.io/linuxserver/webtop:alpine-kasm
+          image: kasmweb/ubuntu-jammy-desktop:1.16.0
           imagePullPolicy: IfNotPresent
           env:
-            - name: PUID
-              value: "1000"
-            - name: PGID
-              value: "1000"
-            - name: TZ
-              value: "Etc/UTC"
-            - name: LIBGL_ALWAYS_SOFTWARE
-              value: "1"
-            - name: CUSTOM_USER
-              value: "kyler"
-            - name: PASSWORD
+            - name: VNC_PW
               value: "password"
-            - name: RESOLUTION
-              value: "1920x1080"
-            - name: KASM_SVC_bw_quality
-              value: "low"
-            - name: KASM_SVC_enc_quality
-              value: "low"
-            - name: KASM_SVC_framerate
-              value: "30"
-            - name: KASM_SVC_lossless_mode
-              value: "true"
-            - name: KASM_SVC_resize_mode
-              value: "scale"
+            - name: VNC_USER
+              value: "kasm_user"
+            - name: VNC_LISTENING_PORT
+              value: "-1"
           ports:
-            - containerPort: 3000
-              name: http
+            - containerPort: 6901
+              name: https
               protocol: TCP
           volumeMounts:
-            - name: config
-              mountPath: /config
-            - name: dshm
-              mountPath: /dev/shm
+            - mountPath: /dev/shm
+              name: dshm
+          readinessProbe:
+            httpGet:
+              path: /
+              port: 6901
+              scheme: HTTPS
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /
+              port: 6901
+              scheme: HTTPS
+            initialDelaySeconds: 30
+            periodSeconds: 30
           resources:
             requests:
               cpu: "4000m"
