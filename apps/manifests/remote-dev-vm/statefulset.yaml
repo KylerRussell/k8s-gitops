@@ -33,6 +33,10 @@ spec:
               value: "Etc/UTC"
             - name: LIBGL_ALWAYS_SOFTWARE
               value: "1"
+            - name: CUSTOM_USER
+              value: "kyler"
+            - name: PASSWORD
+              value: "password"
           ports:
             - containerPort: 3000
               name: http
