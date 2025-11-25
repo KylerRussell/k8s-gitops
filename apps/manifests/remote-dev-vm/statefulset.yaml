@@ -25,10 +25,6 @@ spec:
           image: kasmweb/ubuntu-jammy-desktop:1.16.0
           imagePullPolicy: IfNotPresent
           env:
-            - name: VNC_PW
-              value: "password"
-            - name: VNC_USER
-              value: "kasm_user"
             - name: VNC_LISTENING_PORT
               value: "-1"
           ports:
