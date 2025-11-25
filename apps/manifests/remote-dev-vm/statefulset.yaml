@@ -30,6 +30,8 @@ spec:
               value: "1000"
             - name: TZ
               value: "Etc/UTC"
+            - name: LIBGL_ALWAYS_SOFTWARE
+              value: "1"
           ports:
             - containerPort: 3000
               name: http
@@ -50,6 +52,7 @@ spec:
         - name: dshm
           emptyDir:
             medium: Memory
+            sizeLimit: 16Gi
   volumeClaimTemplates:
     - metadata:
         name: config
