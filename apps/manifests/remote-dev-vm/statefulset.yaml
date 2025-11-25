@@ -18,6 +18,9 @@ spec:
     spec:
       containers:
         - name: webtop
+          securityContext:
+            seccompProfile:
+              type: Unconfined
           image: lscr.io/linuxserver/webtop:ubuntu-xfce
           imagePullPolicy: IfNotPresent
           env:
