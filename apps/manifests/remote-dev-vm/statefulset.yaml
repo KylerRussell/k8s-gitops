@@ -22,7 +22,7 @@ spec:
             privileged: true
             seccompProfile:
               type: Unconfined
-          image: lscr.io/linuxserver/webtop:ubuntu-xfce
+          image: lscr.io/linuxserver/webtop:alpine-xfce
           imagePullPolicy: IfNotPresent
           env:
             - name: PUID
