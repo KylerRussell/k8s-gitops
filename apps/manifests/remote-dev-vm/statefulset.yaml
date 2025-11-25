@@ -37,6 +37,12 @@ spec:
               value: "kyler"
             - name: PASSWORD
               value: "password"
+            - name: RESOLUTION
+              value: "1920x1080"
+            - name: KASM_SVC_bw_quality
+              value: "low"
+            - name: KASM_SVC_enc_quality
+              value: "low"
           ports:
             - containerPort: 3000
               name: http
