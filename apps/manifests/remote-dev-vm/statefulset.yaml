@@ -46,7 +46,9 @@ spec:
             - name: KASM_SVC_framerate
               value: "30"
             - name: KASM_SVC_lossless_mode
-              value: "false"
+              value: "true"
+            - name: KASM_SVC_resize_mode
+              value: "scale"
           ports:
             - containerPort: 3000
               name: http
