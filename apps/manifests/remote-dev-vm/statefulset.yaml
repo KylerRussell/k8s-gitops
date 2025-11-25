@@ -22,7 +22,7 @@ spec:
             privileged: true
             seccompProfile:
               type: Unconfined
-          image: lscr.io/linuxserver/webtop:latest
+          image: lscr.io/linuxserver/webtop:alpine-kasm
           imagePullPolicy: IfNotPresent
           env:
             - name: PUID
