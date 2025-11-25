@@ -23,6 +23,13 @@ spec:
             runAsUser: 0
             seccompProfile:
               type: Unconfined
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              apt-get update && apt-get install -y sudo && \
+              echo "kasm-user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/kasm-user && \
+              chmod 0440 /etc/sudoers.d/kasm-user && \
+              exec runuser -u kasm-user -- /dockerstartup/vnc_startup.sh /dockerstartup/kasm_startup.sh --tail-log
           image: kasmweb/ubuntu-jammy-desktop:1.16.0
           imagePullPolicy: IfNotPresent
           env:
