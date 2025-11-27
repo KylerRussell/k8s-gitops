@@ -8,13 +8,13 @@ metadata:
 spec:
   project: default
   source:
-    repoURL: https://charts.rancher.io
-    chart: local-path-provisioner
-    targetRevision: 0.0.30 # Approximate match for v0.0.32 app version
+    repoURL: https://github.com/rancher/local-path-provisioner.git
+    targetRevision: v0.0.30
+    path: deploy/chart/local-path-provisioner
     helm:
       valuesObject:
         image:
-          tag: v0.0.32
+          tag: v0.0.30 # Matching tag to be safe
         storageClass:
           defaultClass: true
   destination:
