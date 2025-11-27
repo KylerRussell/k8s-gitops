@@ -46,6 +46,7 @@ secret*.yaml
 
 # Allow sealed secrets (they are encrypted and safe to commit)
 !*sealedsecret*.yaml
+!apps/base/sealed-secrets.yaml
 
 # Temporary files
 *.tmp
@@ -60,3 +61,6 @@ Chart.lock
 local/
 tmp/
 test/
+
+# Tools
+kubectl
