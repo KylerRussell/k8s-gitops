@@ -1,0 +1,36 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: bentopdf
+  namespace: bentopdf
+  labels:
+    app: bentopdf
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: bentopdf
+  template:
+    metadata:
+      labels:
+        app: bentopdf
+    spec:
+      containers:
+        - name: bentopdf
+          image: ghcr.io/alam00000/bentopdf:latest
+          ports:
+            - containerPort: 8080
+              name: http
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: bentopdf
+  namespace: bentopdf
+spec:
+  selector:
+    app: bentopdf
+  ports:
+    - protocol: TCP
+      port: 80
+      targetPort: 8080
