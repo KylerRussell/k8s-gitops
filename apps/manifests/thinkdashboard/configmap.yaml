@@ -140,10 +140,26 @@ data:
           "icon": ""
         },
         {
+          "name": "BentoPDF",
+          "url": "http://bentopdf.homelab.com",
+          "shortcut": "BP",
+          "category": "local-cloud",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
           "name": "Open WebUI",
           "url": "http://ollama.homelab.com",
           "shortcut": "O",
           "category": "ai-ml",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
+          "name": "Mealie",
+          "url": "http://mealie.homelab.com",
+          "shortcut": "M",
+          "category": "utilities",
           "checkStatus": false,
           "icon": ""
         }
