@@ -116,14 +116,6 @@ data:
           "icon": ""
         },
         {
-          "name": "Nextcloud",
-          "url": "http://nextcloud.homelab.com",
-          "shortcut": "NC",
-          "category": "local-cloud",
-          "checkStatus": false,
-          "icon": ""
-        },
-        {
           "name": "Excalidraw",
           "url": "http://draw.homelab.com",
           "shortcut": "ED",
