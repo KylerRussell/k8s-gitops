@@ -154,6 +154,14 @@ data:
           "category": "utilities",
           "checkStatus": false,
           "icon": ""
+        },
+        {
+          "name": "FileBrowser",
+          "url": "http://files.homelab.com",
+          "shortcut": "FB",
+          "category": "utilities",
+          "checkStatus": false,
+          "icon": ""
         }
       ]
     }
