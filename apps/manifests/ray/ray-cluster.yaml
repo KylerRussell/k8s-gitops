@@ -7,11 +7,11 @@ metadata:
     app.kubernetes.io/name: ray-cluster
     app.kubernetes.io/instance: ray-cluster
 spec:
-  rayVersion: '2.9.0'
+  rayVersion: "2.9.0"
   headGroupSpec:
     rayStartParams:
-      dashboard-host: '0.0.0.0'
-      num-cpus: "4" 
+      dashboard-host: "0.0.0.0"
+      num-cpus: "8"
     template:
       spec:
         containers:
@@ -19,11 +19,11 @@ spec:
             image: rayproject/ray:2.9.0
             resources:
               limits:
-                cpu: "4"
-                memory: "8Gi"
+                cpu: "8"
+                memory: "32Gi"
               requests:
-                cpu: "2"
-                memory: "4Gi"
+                cpu: "4"
+                memory: "16Gi"
             ports:
               - containerPort: 6379
                 name: gcs-server
@@ -51,8 +51,8 @@ spec:
               image: rayproject/ray:2.9.0
               resources:
                 limits:
-                  cpu: "16"
-                  memory: "64Gi"
+                  cpu: "32"
+                  memory: "128Gi"
                 requests:
-                  cpu: "16"
-                  memory: "64Gi"
+                  cpu: "32"
+                  memory: "128Gi"
