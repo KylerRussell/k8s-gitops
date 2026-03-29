@@ -7,4 +7,3 @@ resources:
   - ingress.yaml
   - pvc.yaml
   - deepspeed-config.yaml
-  - ray-job.yaml

@@ -20,7 +20,7 @@ spec:
               claimName: model-training-data
         containers:
           - name: ray-head
-            image: rayproject/ray:2.9.0
+            image: kylerrussell/cascade-training:latest
             resources:
               limits:
                 cpu: "8"
@@ -59,7 +59,7 @@ spec:
                   ray.io/group: compute-group
           containers:
             - name: ray-worker
-              image: rayproject/ray:2.9.0
+              image: kylerrussell/cascade-training:latest
               resources:
                 limits:
                   cpu: "60"
