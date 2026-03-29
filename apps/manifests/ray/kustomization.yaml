@@ -5,3 +5,4 @@ resources:
   - ray-cluster.yaml
   - service.yaml
   - ingress.yaml
+  - pvc.yaml
