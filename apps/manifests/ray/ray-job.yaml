@@ -26,8 +26,8 @@ spec:
             claimName: model-training-data
       containers:
         - name: ray-job-submitter
-          # Ensure this matches the Docker image you build from the Dockerfile
-          image: custom-ray-training-image:latest
+          # Using the DockerHub image you just built and pushed
+          image: kylerrussell/cascade-training:latest
           volumeMounts:
             - mountPath: /workspace/shared
               name: shared-data
