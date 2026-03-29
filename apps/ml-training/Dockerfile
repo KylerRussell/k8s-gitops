@@ -1,20 +1,24 @@
-FROM python:3.10-slim
+FROM rayproject/ray:2.9.0-py310
 
-# Install necessary system dependencies
+# Switch to root to install system dependencies if needed
+USER root
 RUN apt-get update && apt-get install -y --no-install-recommends \
     build-essential \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PyTorch for CPU explicitly first
-RUN pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu
+# Switch back to ray user
+USER ray
 
-# Install DeepSpeed, Ray, and Transformers
-RUN pip install --no-cache-dir deepspeed "ray[default]" transformers
+# Explicitly install CPU-only PyTorch and DeepSpeed
+# We uninstall existing torch if any to avoid version conflicts
+RUN pip uninstall -y torch torchvision torchaudio && \
+    pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
+    pip install --no-cache-dir deepspeed transformers
 
-# Copy the orchestration script and deepspeed config into the container
+# Set up the application directory
 WORKDIR /app
-COPY train_cascade.py /app/
-COPY deepspeed_config.json /app/
+COPY --chown=ray:users train_cascade.py /app/
+COPY --chown=ray:users deepspeed_config.json /app/
 
-# Command is typically overridden by KubeRay/RayJob, but provide a default
+# Entrypoint is already handled by Ray, but we define the default command
 CMD ["python", "/app/train_cascade.py"]
