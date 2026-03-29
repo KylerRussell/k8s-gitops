@@ -1,0 +1,33 @@
+apiVersion: ray.io/v1
+kind: RayJob
+metadata:
+  name: cascade-training-job
+  namespace: ray
+spec:
+  # The entrypoint command to run on the Ray Cluster head node
+  # We assume train_cascade.py has been synced or copied to /workspace/shared/
+  # Alternatively, it could be run from /app/train_cascade.py if using the custom image directly on the head node
+  entrypoint: python /workspace/shared/train_cascade.py
+
+  # Select the existing ray cluster to run on
+  clusterSelector:
+    app.kubernetes.io/instance: ray-cluster
+
+  # Do not shutdown the cluster after the job finishes since it's a permanent cluster
+  shutdownAfterJobFinishes: false
+
+  # Optional definition for the submitter pod
+  submitterPodTemplate:
+    spec:
+      restartPolicy: Never
+      volumes:
+        - name: shared-data
+          persistentVolumeClaim:
+            claimName: model-training-data
+      containers:
+        - name: ray-job-submitter
+          # Ensure this matches the Docker image you build from the Dockerfile
+          image: custom-ray-training-image:latest
+          volumeMounts:
+            - mountPath: /workspace/shared
+              name: shared-data

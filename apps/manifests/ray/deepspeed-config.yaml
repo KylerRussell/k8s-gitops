@@ -1,0 +1,24 @@
+apiVersion: v1
+kind: ConfigMap
+metadata:
+  name: ray-deepspeed-config
+  namespace: ray
+data:
+  deepspeed_config.json: |
+    {
+      "train_micro_batch_size_per_gpu": 1,
+      "gradient_accumulation_steps": 1,
+      "steps_per_print": 10,
+      "zero_optimization": {
+        "stage": 3,
+        "offload_optimizer": {
+          "device": "cpu"
+        },
+        "offload_param": {
+          "device": "cpu"
+        }
+      },
+      "prescale_gradients": false,
+      "wall_clock_breakdown": false,
+      "communication_data_type": "fp32"
+    }
