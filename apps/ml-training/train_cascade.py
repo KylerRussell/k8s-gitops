@@ -5,6 +5,7 @@ import deepspeed
 from transformers import AutoModelForCausalLM, AutoTokenizer
 from datasets import load_dataset
 import ray
+from huggingface_hub import login
 
 import torch.nn as nn
 import torch.nn.functional as F
@@ -143,9 +144,13 @@ def main():
     print("[Trainer] DeepSpeed active model initialized with DeepSpeed.")
 
     # Dataset Streaming
+    if os.environ.get("HF_TOKEN"):
+        print("[Trainer] Authenticating with HF Hub...")
+        login(token=os.environ["HF_TOKEN"])
+
     print(f"[Trainer] Loading NVIDIA SFT dataset in streaming mode (Rank {rank})...")
     dataset_name = "nvidia/Nemotron-Cascade-2-SFT-Data"
-    raw_dataset = load_dataset(dataset_name, split="train", streaming=True)
+    raw_dataset = load_dataset(dataset_name, split="train", streaming=True, trust_remote_code=True)
     sharded_dataset = raw_dataset.shard(num_shards=world_size, index=rank)
 
     # Unified I/O

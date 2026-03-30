@@ -13,7 +13,7 @@ USER ray
 # We uninstall existing torch if any to avoid version conflicts
 RUN pip uninstall -y torch torchvision torchaudio && \
     pip install --no-cache-dir torch --index-url https://download.pytorch.org/whl/cpu && \
-    pip install --no-cache-dir deepspeed transformers datasets accelerate
+    pip install --no-cache-dir deepspeed transformers datasets accelerate fsspec[http] huggingface_hub -U
 
 # Set up the application directory
 WORKDIR /app
