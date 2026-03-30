@@ -21,6 +21,12 @@ spec:
         containers:
           - name: ray-head
             image: kylerrussell/cascade-training:latest
+            env:
+              - name: HF_TOKEN
+                valueFrom:
+                  secretKeyRef:
+                    name: hf-token
+                    key: HF_TOKEN
             resources:
               limits:
                 cpu: "8"
@@ -60,6 +66,12 @@ spec:
           containers:
             - name: ray-worker
               image: kylerrussell/cascade-training:latest
+              env:
+                - name: HF_TOKEN
+                  valueFrom:
+                    secretKeyRef:
+                      name: hf-token
+                      key: HF_TOKEN
               resources:
                 limits:
                   cpu: "60"
