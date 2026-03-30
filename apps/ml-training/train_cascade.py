@@ -23,6 +23,7 @@ def main():
     os.environ["MASTER_PORT"] = os.environ.get("MASTER_PORT", "29500")
     os.environ["WORLD_SIZE"] = os.environ.get("WORLD_SIZE", "1")
     os.environ["RANK"] = os.environ.get("RANK", "0")
+    os.environ["LOCAL_RANK"] = os.environ.get("LOCAL_RANK", "0")
     
     # Initialize the PyTorch distributed process group explicitly using the gloo backend
     dist.init_process_group(backend="gloo")
@@ -58,7 +59,9 @@ def main():
     os.makedirs(shared_dir, exist_ok=True)
     
     checkpoint_dir = os.path.join(shared_dir, "checkpoints")
-    model_engine.save_checkpoint(checkpoint_dir)
+    # Using HuggingFace save_pretrained to bypass a DeepSpeed internal NoneType error on some CPU environments
+    # For a 0.5B dummy model, this is the most reliable way to verify the path and write permissions.
+    model_engine.module.save_pretrained(checkpoint_dir)
     print(f"[Trainer] Model checkpoint successfully saved to {checkpoint_dir}")
 
     # Validate Verifier Ray Actor
