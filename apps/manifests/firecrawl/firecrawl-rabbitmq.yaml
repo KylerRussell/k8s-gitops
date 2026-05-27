@@ -32,18 +32,18 @@ spec:
               memory: "512Mi"
               cpu: "500m"
           readinessProbe:
-            exec:
-              command: ["rabbitmq-diagnostics", "-q", "check_running"]
+            tcpSocket:
+              port: 5672
             initialDelaySeconds: 30
-            periodSeconds: 15
-            timeoutSeconds: 15
-            failureThreshold: 5
+            periodSeconds: 10
+            timeoutSeconds: 5
+            failureThreshold: 10
           livenessProbe:
-            exec:
-              command: ["rabbitmq-diagnostics", "-q", "check_running"]
-            initialDelaySeconds: 60
+            tcpSocket:
+              port: 5672
+            initialDelaySeconds: 120
             periodSeconds: 30
-            timeoutSeconds: 15
+            timeoutSeconds: 5
             failureThreshold: 5
 ---
 apiVersion: v1
