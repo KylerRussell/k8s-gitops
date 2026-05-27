@@ -18,7 +18,6 @@ spec:
       containers:
         - name: api
           image: ghcr.io/firecrawl/firecrawl:latest
-          command: ["node", "dist/src/harness.js", "--start-docker"]
           ports:
             - containerPort: 3002
               name: http
@@ -74,14 +73,14 @@ spec:
               cpu: "2000m"
           readinessProbe:
             httpGet:
-              path: /v1/health
+              path: /
               port: 3002
             initialDelaySeconds: 30
             periodSeconds: 10
             timeoutSeconds: 5
           livenessProbe:
             httpGet:
-              path: /v1/health
+              path: /
               port: 3002
             initialDelaySeconds: 60
             periodSeconds: 30
