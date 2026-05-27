@@ -1,0 +1,69 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: firecrawl-playwright
+  namespace: firecrawl
+  labels:
+    app: firecrawl-playwright
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: firecrawl-playwright
+  template:
+    metadata:
+      labels:
+        app: firecrawl-playwright
+    spec:
+      containers:
+        - name: playwright
+          image: ghcr.io/firecrawl/playwright-service:latest
+          ports:
+            - containerPort: 3000
+              name: http
+          env:
+            - name: PORT
+              value: "3000"
+            - name: MAX_CONCURRENT_PAGES
+              value: "10"
+            - name: BLOCK_MEDIA
+              value: "false"
+          resources:
+            requests:
+              memory: "512Mi"
+              cpu: "500m"
+            limits:
+              memory: "4Gi"
+              cpu: "2000m"
+          volumeMounts:
+            - name: browser-cache
+              mountPath: /tmp/.cache
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 10
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: 3000
+            initialDelaySeconds: 20
+            periodSeconds: 30
+      volumes:
+        - name: browser-cache
+          emptyDir:
+            sizeLimit: 1Gi
+---
+apiVersion: v1
+kind: Service
+metadata:
+  name: firecrawl-playwright
+  namespace: firecrawl
+spec:
+  selector:
+    app: firecrawl-playwright
+  ports:
+    - protocol: TCP
+      port: 3000
+      targetPort: 3000
