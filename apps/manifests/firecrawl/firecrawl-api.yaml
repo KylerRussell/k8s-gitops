@@ -79,8 +79,8 @@ spec:
               memory: "512Mi"
               cpu: "500m"
             limits:
-              memory: "2Gi"
-              cpu: "2000m"
+              memory: "12Gi"
+              cpu: "4000m"
           readinessProbe:
             httpGet:
               path: /
