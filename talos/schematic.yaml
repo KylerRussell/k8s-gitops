@@ -8,9 +8,24 @@
 # that contains only the NVIDIA extensions -- that would drop iSCSI support
 # and break every Longhorn volume.
 #
-# The two NVIDIA extensions must be kept at matching driver versions. The
-# Image Factory resolves both to the correct version for the Talos release
-# in the image tag, so pin the Talos version (not the driver) when building.
+# The NVIDIA extensions are branch-suffixed on Talos v1.9. The unsuffixed
+# names used in the Talos docs (siderolabs/nvidia-container-toolkit,
+# siderolabs/nvidia-open-gpu-kernel-modules) DO NOT EXIST for v1.9.5 -- the
+# Image Factory accepts a schematic containing them without complaint and
+# then fails to build the installer. Confirmed against:
+#
+#   https://factory.talos.dev/version/v1.9.5/extensions/official
+#
+# Two branches are published, and the driver versions MUST match across the
+# kernel modules and the container toolkit:
+#
+#   -lts         535.230.02  /  535.230.02-v1.17.3
+#   -production  550.144.03  /  550.144.03-v1.17.3
+#
+# -production is used here for newer CUDA support. The RTX 3090 is Ampere
+# (GA102), which the open kernel modules support on either branch.
+#
+# Re-check these names before moving to a different Talos release.
 #
 # Register this schematic and get its ID:
 #
@@ -23,5 +38,5 @@ customization:
   systemExtensions:
     officialExtensions:
       - siderolabs/iscsi-tools
-      - siderolabs/nvidia-open-gpu-kernel-modules
-      - siderolabs/nvidia-container-toolkit
+      - siderolabs/nvidia-open-gpu-kernel-modules-production
+      - siderolabs/nvidia-container-toolkit-production

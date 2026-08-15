@@ -94,13 +94,30 @@ talosctl -e $CP -n $CP get addresses | grep 192.168.86.230
 curl -X POST --data-binary @talos/schematic.yaml https://factory.talos.dev/schematics
 ```
 
-Put the returned ID into `patches/all-nodes-endpoint.yaml`, replacing
-`<SCHEMATIC_ID>`. The ID is deterministic — the same schematic always
-produces the same ID.
+Already done — the resulting ID is baked into
+`patches/all-nodes-endpoint.yaml`:
 
-> **Talos does not validate the image reference.** A dry-run with the
-> placeholder still in place applies cleanly and writes a bogus installer
-> image into the config. Substitute the ID before Stage 3.
+```
+f53e88768342a2fd9d590e037332c5fcd709d8fd80aa7db6c326f81a43227bf4
+```
+
+The ID is deterministic, so re-registering the same schematic returns the
+same value. Re-run this and update the patch only if the extension list
+changes.
+
+> **The extension names are branch-suffixed on v1.9.** The unsuffixed names
+> in the Talos docs (`siderolabs/nvidia-container-toolkit`,
+> `siderolabs/nvidia-open-gpu-kernel-modules`) do not exist for v1.9.5. The
+> Image Factory accepts a schematic containing them and returns an ID
+> without complaint — the failure only shows up when the installer is
+> pulled. Check the names for your release before changing them:
+>
+> ```bash
+> curl -s https://factory.talos.dev/version/v1.9.5/extensions/official
+> ```
+
+> **Talos does not validate the image reference either.** A wrong or stale
+> schematic ID applies cleanly and only fails at upgrade time.
 
 ### Stage 3 — repoint the endpoint and installer
 
@@ -114,7 +131,7 @@ Pass the image **explicitly**. Do not rely on `install.image` alone.
 Upgrade one node at a time and wait for `Ready` in between.
 
 ```bash
-talosctl -e $CP -n $W1 upgrade --image factory.talos.dev/installer/<SCHEMATIC_ID>:v1.9.5
+talosctl -e $CP -n $W1 upgrade --image factory.talos.dev/installer/f53e88768342a2fd9d590e037332c5fcd709d8fd80aa7db6c326f81a43227bf4:v1.9.5
 ```
 
 Repeat for `$W2`, then `$CP` last. The control plane reboot takes the API

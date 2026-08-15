@@ -12,15 +12,16 @@
 #
 # Both fields are scalars, so strategic merge replaces them cleanly.
 #
-# REPLACE <SCHEMATIC_ID> before applying. Get it by registering the
-# schematic (see talos/schematic.yaml).
+# The schematic ID below is the one registered from talos/schematic.yaml.
+# It is deterministic: re-registering the same schematic returns the same ID.
+# If you change the extension list, re-register and update this reference.
 #
-# WARNING: Talos does NOT validate the image reference on apply -- it will
-# accept the literal "<SCHEMATIC_ID>" placeholder without error and write a
-# bogus installer image into the config. Substitute it first.
+# WARNING: Talos does NOT validate the image reference on apply. It accepts
+# any string -- including a stale or misspelled schematic ID -- without error
+# and writes it into the config, where it only fails at upgrade time.
 cluster:
   controlPlane:
     endpoint: https://192.168.86.230:6443
 machine:
   install:
-    image: factory.talos.dev/installer/<SCHEMATIC_ID>:v1.9.5
+    image: factory.talos.dev/installer/f53e88768342a2fd9d590e037332c5fcd709d8fd80aa7db6c326f81a43227bf4:v1.9.5
