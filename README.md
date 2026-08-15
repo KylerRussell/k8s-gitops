@@ -28,8 +28,12 @@ k8s-gitops/
 │   └── manifests/               # Kubernetes manifests (Kustomize)
 ├── argocd/
 │   └── root-app.yaml           # App of Apps pattern entry point
+├── talos/                       # Talos machine config patches (no secrets)
 └── docs/                        # Documentation & Guides
 ```
+
+> `talos/` covers the layer beneath Kubernetes, which Argo CD cannot manage.
+> See [talos/README.md](talos/README.md).
 
 ## 📱 Application Catalog
 
@@ -48,6 +52,8 @@ The following applications are currently deployed and managed via GitOps:
 | **Metrics Server** | Resource metrics collector | Monitoring |
 | **Monitoring** | Prometheus & Grafana stack | Monitoring |
 | **Nextcloud** | Productivity platform | Productivity |
+| **NVIDIA Device Plugin** | Exposes the control plane's GPUs to Kubernetes | AI |
+| **Claude Code VM** | GPU-backed Kasm desktop running Claude Code | Dev Tools |
 | **Ollama** | Local LLM runner | AI |
 | **Remote Dev VM** | Remote development virtual machine | Dev Tools |
 | **Sealed Secrets** | Encrypted secrets management | Security |

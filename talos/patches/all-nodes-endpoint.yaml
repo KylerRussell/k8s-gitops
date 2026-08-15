@@ -1,0 +1,26 @@
+# Strategic merge patch -- APPLY TO ALL THREE NODES.
+#
+# Fix 1: cluster.controlPlane.endpoint currently points at 192.168.86.26,
+#        an IP that is assigned to nothing. The cluster only survives this
+#        because kubePrism (127.0.0.1:7445) gives in-cluster components a
+#        local endpoint. Repoint it at the new control plane VIP.
+#
+# Fix 3: machine.install.image is the stock installer, which carries NO
+#        system extensions -- an upgrade with it would silently drop
+#        iscsi-tools and break Longhorn. Repoint it at the Image Factory
+#        installer built from talos/schematic.yaml.
+#
+# Both fields are scalars, so strategic merge replaces them cleanly.
+#
+# REPLACE <SCHEMATIC_ID> before applying. Get it by registering the
+# schematic (see talos/schematic.yaml).
+#
+# WARNING: Talos does NOT validate the image reference on apply -- it will
+# accept the literal "<SCHEMATIC_ID>" placeholder without error and write a
+# bogus installer image into the config. Substitute it first.
+cluster:
+  controlPlane:
+    endpoint: https://192.168.86.230:6443
+machine:
+  install:
+    image: factory.talos.dev/installer/<SCHEMATIC_ID>:v1.9.5

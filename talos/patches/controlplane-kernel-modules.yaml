@@ -1,0 +1,25 @@
+# RFC 6902 JSON patch -- APPLY TO THE CONTROL PLANE NODE ONLY.
+#
+# Fix 5: iscsi_tcp is currently listed TWICE on every node (a leftover from
+#        applying an iSCSI patch twice).
+# Fix 6: the two RTX 3090s need the NVIDIA kernel modules loaded.
+#
+# This MUST be a JSON patch. Talos APPENDS to lists on strategic merge, so a
+# merge patch here would add a third iscsi_tcp rather than deduplicating.
+# `op: replace` sets the list to exactly these entries.
+#
+# These modules are only loaded on the control plane, which is where both
+# GPUs are installed. Loading them on the GPU-less workers would just
+# generate module load failures -- see worker-kernel-modules.yaml.
+#
+# Requires the nvidia-open-gpu-kernel-modules extension to be present in the
+# running image first. Apply this only AFTER the factory image upgrade, or
+# the modules will not exist and will fail to load.
+- op: replace
+  path: /machine/kernel/modules
+  value:
+    - name: iscsi_tcp
+    - name: nvidia
+    - name: nvidia_uvm
+    - name: nvidia_drm
+    - name: nvidia_modeset

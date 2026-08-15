@@ -1,0 +1,27 @@
+# Talos Image Factory schematic for r820-cluster.
+#
+# This is the SINGLE schematic used by all three nodes (1 control plane,
+# 2 workers) so that upgrades stay uniform across the cluster.
+#
+# iscsi-tools is REQUIRED by Longhorn. It is currently the only extension
+# running on the cluster. Do not remove it, and do not build a schematic
+# that contains only the NVIDIA extensions -- that would drop iSCSI support
+# and break every Longhorn volume.
+#
+# The two NVIDIA extensions must be kept at matching driver versions. The
+# Image Factory resolves both to the correct version for the Talos release
+# in the image tag, so pin the Talos version (not the driver) when building.
+#
+# Register this schematic and get its ID:
+#
+#   curl -X POST --data-binary @talos/schematic.yaml \
+#     https://factory.talos.dev/schematics
+#
+# The returned ID is deterministic: the same schematic always yields the
+# same ID. Put that ID into talos/patches/all-nodes-endpoint.yaml.
+customization:
+  systemExtensions:
+    officialExtensions:
+      - siderolabs/iscsi-tools
+      - siderolabs/nvidia-open-gpu-kernel-modules
+      - siderolabs/nvidia-container-toolkit

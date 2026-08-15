@@ -48,6 +48,17 @@ secret*.yaml
 !*sealedsecret*.yaml
 !apps/base/sealed-secrets.yaml
 
+# Talos — full machine configs and credentials carry the cluster CA private
+# keys, service account key, bootstrap tokens and secretbox secret.
+# Only patches and the schematic belong in talos/.
+talos/secrets.yaml
+talos/talosconfig
+talos/kubeconfig
+talos/controlplane.yaml
+talos/worker.yaml
+talos/rendered/
+talos/*-machineconfig.yaml
+
 # Temporary files
 *.tmp
 *.bak

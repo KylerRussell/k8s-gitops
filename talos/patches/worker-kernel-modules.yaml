@@ -1,0 +1,13 @@
+# RFC 6902 JSON patch -- APPLY TO BOTH WORKER NODES.
+#
+# Fix 5: deduplicate the doubled iscsi_tcp entry.
+#
+# The workers have no GPUs, so they get iscsi_tcp only. They still run the
+# same image (which carries the NVIDIA extensions) to keep upgrades uniform
+# across the cluster -- the extensions are simply inert without a GPU.
+#
+# JSON patch rather than strategic merge, because Talos appends to lists.
+- op: replace
+  path: /machine/kernel/modules
+  value:
+    - name: iscsi_tcp

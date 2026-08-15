@@ -1,0 +1,13 @@
+# Strategic merge patch -- APPLY TO THE CONTROL PLANE NODE ONLY.
+#
+# Fix 6: required by the Talos NVIDIA guide alongside the nvidia kernel
+#        modules.
+#
+# sysctls is a map, so strategic merge adds this key without disturbing the
+# existing net.ipv4.* entries.
+#
+# The value is quoted to match the existing sysctls in the running config
+# (Talos types this field as map[string]string).
+machine:
+  sysctls:
+    net.core.bpf_jit_harden: "1"

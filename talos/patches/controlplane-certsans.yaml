@@ -1,0 +1,18 @@
+# RFC 6902 JSON patch -- APPLY TO THE CONTROL PLANE NODE ONLY.
+#
+# Fix 4: cluster.apiServer.certSANs currently contains only 192.168.86.26,
+#        the dead address. The new VIP must be present or TLS will fail the
+#        moment anything connects to the API server through it.
+#
+# This is a JSON patch rather than a strategic merge because Talos APPENDS
+# to lists on strategic merge -- merging would leave the stale .26 entry in
+# place. `op: replace` sets the list to exactly these values.
+#
+# Talos automatically adds each node's own IP to the API server certificate,
+# so .23 and .55 are belt-and-braces; the VIP is the entry that matters.
+- op: replace
+  path: /cluster/apiServer/certSANs
+  value:
+    - 192.168.86.230
+    - 192.168.86.23
+    - 192.168.86.55

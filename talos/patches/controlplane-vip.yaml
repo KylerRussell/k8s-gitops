@@ -1,0 +1,31 @@
+# Strategic merge patch -- APPLY TO THE CONTROL PLANE NODE ONLY.
+#
+# Fix 2: machine.network is currently {} -- both NICs are pure DHCP with no
+#        static addressing and no VIP. That is why the control plane address
+#        drifted from 192.168.86.26 to 192.168.86.23 and broke the endpoint.
+#
+# The VIP is a layer 2 floating address held via etcd leader election. It
+# gives cluster.controlPlane.endpoint a stable target that survives DHCP
+# lease changes.
+#
+# eno1 is the primary link (it holds 192.168.86.23, the node's default
+# address). eno2 holds .55; eno3/eno4 are down.
+#
+# Talos merges network.interfaces by the `interface:` key, so this adds the
+# VIP to eno1 without disturbing the other links.
+#
+# IMPORTANT CAVEATS
+#   * 192.168.86.230 must be OUTSIDE the router's DHCP pool and must never be
+#     handed out. It is also outside the MetalLB pool (192.168.86.240-250).
+#   * The VIP depends on etcd. It will not come up until Kubernetes is
+#     bootstrapped and etcd is healthy.
+#   * Do NOT use the VIP as the talosctl endpoint in talosconfig. It is bound
+#     to etcd/kube-apiserver health, so you could not use it to recover from
+#     a failure. talosctl must target the real node IP.
+machine:
+  network:
+    interfaces:
+      - interface: eno1
+        dhcp: true
+        vip:
+          ip: 192.168.86.230
