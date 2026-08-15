@@ -1,0 +1,9 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+# No top-level `namespace:` here. Both the Namespace and the RuntimeClass are
+# cluster-scoped, and setting it would make kustomize rewrite the Namespace
+# object's own name. The DaemonSet carries its namespace explicitly instead.
+resources:
+- namespace.yaml
+- runtimeclass.yaml
+- daemonset.yaml

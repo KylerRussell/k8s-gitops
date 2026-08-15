@@ -1,0 +1,64 @@
+apiVersion: apps/v1
+kind: DaemonSet
+metadata:
+  name: nvidia-device-plugin
+  namespace: nvidia-device-plugin
+  labels:
+    app.kubernetes.io/name: nvidia-device-plugin
+spec:
+  selector:
+    matchLabels:
+      app.kubernetes.io/name: nvidia-device-plugin
+  updateStrategy:
+    type: RollingUpdate
+  template:
+    metadata:
+      labels:
+        app.kubernetes.io/name: nvidia-device-plugin
+    spec:
+      # Routes the pod through the containerd runtime registered by the
+      # nvidia-container-toolkit extension. Required even for the plugin.
+      runtimeClassName: nvidia
+      priorityClassName: system-node-critical
+      # Applied to the control plane node by
+      # talos/patches/controlplane-node-label.yaml. Only that node has GPUs;
+      # without this selector the plugin crash-loops on the two workers.
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      tolerations:
+        # The control plane currently carries no taints
+        # (allowSchedulingOnControlPlanes: true), so this is not needed today.
+        # It is here so the plugin keeps scheduling if that changes.
+        - key: node-role.kubernetes.io/control-plane
+          operator: Exists
+          effect: NoSchedule
+        - key: nvidia.com/gpu
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: nvidia-device-plugin
+          # v0.19.3 is the newest published tag; v0.17.4 is pinned here as a
+          # conservative, widely-deployed release known to cover Kubernetes
+          # 1.32. Bump deliberately rather than tracking latest.
+          image: nvcr.io/nvidia/k8s-device-plugin:v0.17.4
+          env:
+            # Crash rather than sit idle if the driver or runtime is missing,
+            # so a broken GPU node is visible instead of silently offering
+            # zero devices.
+            - name: FAIL_ON_INIT_ERROR
+              value: "true"
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop:
+                - ALL
+          volumeMounts:
+            - name: device-plugin
+              mountPath: /var/lib/kubelet/device-plugins
+      volumes:
+        # How the plugin registers itself with the kubelet. hostPath is
+        # forbidden by `baseline` PodSecurity, which is why this namespace
+        # carries a privileged PSA label -- see namespace.yaml.
+        - name: device-plugin
+          hostPath:
+            path: /var/lib/kubelet/device-plugins
