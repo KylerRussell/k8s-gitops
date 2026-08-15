@@ -1,0 +1,170 @@
+apiVersion: apps/v1
+kind: StatefulSet
+metadata:
+  name: claude-code-vm
+  namespace: claude-code-vm
+  labels:
+    app: claude-code-vm
+spec:
+  serviceName: claude-code-vm
+  replicas: 1
+  selector:
+    matchLabels:
+      app: claude-code-vm
+  template:
+    metadata:
+      labels:
+        app: claude-code-vm
+    spec:
+      # Routes the pod through the containerd runtime registered by the
+      # nvidia-container-toolkit extension. Without this the GPUs are not
+      # injected into the container even when the resource request is granted.
+      runtimeClassName: nvidia
+      # Both GPUs live on the control plane node. This label is applied by
+      # talos/patches/controlplane-node-label.yaml.
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      initContainers:
+        # Mounting a volume straight onto /home/kasm-user would shadow the
+        # desktop profile the image ships (panel config, Desktop entries, VNC
+        # settings), and the session would come up broken.
+        #
+        # So on first boot only, seed the empty volume from the image's own
+        # home directory. Subsequent restarts see the marker file and skip it,
+        # leaving whatever you have installed untouched.
+        - name: seed-home
+          image: kasmweb/ubuntu-jammy-desktop:1.16.0
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
+          command: ["/bin/bash", "-c"]
+          args:
+            - |
+              set -euo pipefail
+
+              if [ ! -e /mnt/home/.home-seeded ]; then
+                echo "empty volume -- seeding from image"
+                cp -a /home/kasm-user/. /mnt/home/
+
+                # Make `npm install -g` land in $HOME instead of /usr, so a
+                # global install survives a restart. Only written during the
+                # one-time seed, so it never stacks up on later boots.
+                printf 'prefix=/home/kasm-user/.npm-global\n' > /mnt/home/.npmrc
+                printf '\nexport PATH="$HOME/.npm-global/bin:$PATH"\n' >> /mnt/home/.bashrc
+
+                touch /mnt/home/.home-seeded
+              else
+                echo "volume already seeded -- leaving it alone"
+              fi
+
+              chown -R 1000:1000 /mnt/home
+          volumeMounts:
+            - mountPath: /mnt/home
+              name: home
+          resources:
+            requests:
+              cpu: "500m"
+              memory: "1Gi"
+            limits:
+              cpu: "2"
+              memory: "2Gi"
+      containers:
+        - name: webtop
+          securityContext:
+            privileged: true
+            runAsUser: 0
+            seccompProfile:
+              type: Unconfined
+          command: ["/bin/bash", "-c"]
+          # Nothing is installed here on purpose. Node, Claude Code and
+          # anything else you want are installed once, by hand, into the
+          # persistent home directory. See this app's README.
+          #
+          # This only grants kasm-user sudo, matching remote-dev-vm.
+          args:
+            - |
+              set -euo pipefail
+              apt-get update && apt-get install -y sudo
+              echo "kasm-user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/kasm-user
+              chmod 0440 /etc/sudoers.d/kasm-user
+              exec runuser -u kasm-user -- /dockerstartup/vnc_startup.sh /dockerstartup/kasm_startup.sh --tail-log
+          image: kasmweb/ubuntu-jammy-desktop:1.16.0
+          imagePullPolicy: IfNotPresent
+          env:
+            # Not hardcoded, unlike remote-dev-vm. Create this as a sealed
+            # secret before syncing -- see this app's README.
+            - name: VNC_PW
+              valueFrom:
+                secretKeyRef:
+                  name: claude-code-vm-auth
+                  key: VNC_PW
+            - name: VNC_USER
+              value: "kasm_user"
+            - name: VNC_LISTENING_PORT
+              value: "-1"
+          envFrom:
+            # Optional. Seal an ANTHROPIC_API_KEY in here to skip interactive
+            # login; otherwise just run `claude` in the desktop terminal.
+            - secretRef:
+                name: claude-code-vm-api
+                optional: true
+          ports:
+            - containerPort: 6901
+              name: https
+              protocol: TCP
+          volumeMounts:
+            - mountPath: /dev/shm
+              name: dshm
+            - mountPath: /home/kasm-user
+              name: home
+          readinessProbe:
+            tcpSocket:
+              port: 6901
+            initialDelaySeconds: 30
+            periodSeconds: 10
+            failureThreshold: 12
+          livenessProbe:
+            tcpSocket:
+              port: 6901
+            initialDelaySeconds: 120
+            periodSeconds: 30
+          resources:
+            # Sized against the GPU node after scaling Ray down.
+            #
+            #   allocatable            629.2 GiB
+            #   requested by others      3.9 GiB
+            #   schedulable            625.2 GiB
+            #
+            # 576Gi is 618 GB in decimal terms and leaves ~49 GiB of headroom.
+            # Going to 620Gi would schedule but leave only ~5 GiB for
+            # everything else -- and etcd runs on this node, so an OOM here
+            # takes the entire cluster down with it. Raise deliberately.
+            #
+            # memory request == limit gives the pod a predictable ceiling; CPU
+            # is allowed to burst since CPU pressure only throttles.
+            requests:
+              cpu: "8"
+              memory: "576Gi"
+              nvidia.com/gpu: "2"
+            limits:
+              cpu: "32"
+              memory: "576Gi"
+              nvidia.com/gpu: "2"
+      volumes:
+        # Counts against the container's memory limit.
+        - name: dshm
+          emptyDir:
+            medium: Memory
+            sizeLimit: 64Gi
+  volumeClaimTemplates:
+    - metadata:
+        name: home
+      spec:
+        accessModes: ["ReadWriteOnce"]
+        # Node-local, which is fine here: the pod is pinned to the GPU node by
+        # nodeSelector and cannot migrate anyway. The node has a 3.0 TB disk
+        # with ~2.79 TiB allocatable, so this is comfortably backed.
+        storageClassName: "local-path"
+        resources:
+          requests:
+            storage: 500Gi

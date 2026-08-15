@@ -1,0 +1,13 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: claude-code-vm
+  namespace: claude-code-vm
+spec:
+  ports:
+    - port: 3000
+      targetPort: 6901
+      protocol: TCP
+      name: http
+  selector:
+    app: claude-code-vm

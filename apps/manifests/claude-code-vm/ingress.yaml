@@ -1,0 +1,35 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: claude-code-vm
+  namespace: claude-code-vm
+  annotations:
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "86400"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "86400"
+    nginx.ingress.kubernetes.io/websocket-services: "claude-code-vm"
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+    nginx.ingress.kubernetes.io/proxy-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+    nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
+    nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
+    # Deliberately NOT carrying over remote-dev-vm's
+    # `configuration-snippet` that injects a hardcoded basic-auth header.
+    # That header embeds the credentials in Git and pre-authenticates anyone
+    # who reaches the host. Log in through the Kasm page instead.
+spec:
+  ingressClassName: nginx
+  tls:
+    - hosts:
+        - claude-code.homelab.com
+      secretName: claude-code-vm-tls
+  rules:
+    - host: claude-code.homelab.com
+      http:
+        paths:
+          - path: /
+            pathType: Prefix
+            backend:
+              service:
+                name: claude-code-vm
+                port:
+                  number: 3000
