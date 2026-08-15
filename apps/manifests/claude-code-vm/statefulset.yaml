@@ -91,13 +91,22 @@ spec:
           image: kasmweb/ubuntu-jammy-desktop:1.16.0
           imagePullPolicy: IfNotPresent
           env:
-            # Not hardcoded, unlike remote-dev-vm. Create this as a sealed
-            # secret before syncing -- see this app's README.
+            # Matches remote-dev-vm: inline, paired with the auto-login
+            # Authorization header in ingress.yaml so the desktop opens
+            # without a prompt.
+            #
+            # Deliberate tradeoff -- the credential lives in Git and every
+            # request to the ingress is pre-authenticated. Nothing here is
+            # exposed to the internet (no Tailscale Funnel is configured),
+            # but the ingress sits on a LAN IP, 192.168.86.240, so anything
+            # on the home network can reach it. Unlike remote-dev-vm, this
+            # box holds Claude Code credentials in ~/.claude on the
+            # persistent volume.
+            #
+            # To change it, update BOTH this value and the base64 header in
+            # ingress.yaml -- they must agree or auto-login breaks.
             - name: VNC_PW
-              valueFrom:
-                secretKeyRef:
-                  name: claude-code-vm-auth
-                  key: VNC_PW
+              value: "password"
             - name: VNC_USER
               value: "kasm_user"
             - name: VNC_LISTENING_PORT

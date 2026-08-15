@@ -12,10 +12,14 @@ metadata:
     nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
     nginx.ingress.kubernetes.io/proxy-http-version: "1.1"
     nginx.ingress.kubernetes.io/backend-protocol: "HTTPS"
-    # Deliberately NOT carrying over remote-dev-vm's
-    # `configuration-snippet` that injects a hardcoded basic-auth header.
-    # That header embeds the credentials in Git and pre-authenticates anyone
-    # who reaches the host. Log in through the Kasm page instead.
+    # Auto-login, matching remote-dev-vm. Decodes to kasm_user:password and
+    # must stay in step with VNC_PW in statefulset.yaml -- if the two drift,
+    # the desktop falls back to showing a login page.
+    #
+    # This pre-authenticates every request that reaches the ingress. See the
+    # note on VNC_PW in statefulset.yaml for the exposure this implies.
+    nginx.ingress.kubernetes.io/configuration-snippet: |
+      proxy_set_header Authorization "Basic a2FzbV91c2VyOnBhc3N3b3Jk";
 spec:
   ingressClassName: nginx
   tls:

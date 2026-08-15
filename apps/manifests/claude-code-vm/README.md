@@ -84,19 +84,36 @@ kubectl get node talos-7j9-1pq -o jsonpath='{.status.allocatable.nvidia\.com/gpu
 
 Expect `2`.
 
-## Required secret
+## Access
 
-`VNC_PW` is read from a secret rather than written into Git. Create it with
-sealed-secrets before the first sync:
+No login prompt — the ingress injects an `Authorization` header that
+pre-authenticates every request, exactly like `remote-dev-vm`. The
+credentials are `kasm_user:password`, held in two places that must agree:
 
-```bash
-kubectl create secret generic claude-code-vm-auth \
-  --namespace claude-code-vm \
-  --from-literal=VNC_PW='<choose-a-strong-password>' \
-  --dry-run=client -o yaml | kubeseal --format yaml > claude-code-vm-sealedsecret.yaml
-```
+| File | Field |
+|---|---|
+| `statefulset.yaml` | `VNC_PW` |
+| `ingress.yaml` | base64 in `configuration-snippet` |
 
-Commit the sealed output. Without this secret the pod will not start.
+Change one without the other and auto-login silently breaks into a login
+page.
+
+### What this means
+
+The credential is in Git and every request reaching the ingress is already
+authenticated. Nothing is exposed to the internet — no Tailscale Funnel is
+configured — but ingress-nginx is a LoadBalancer on `192.168.86.240`, a LAN
+address, so the tailnet is an *additional* path rather than a restriction.
+Anything on the home network can reach this.
+
+That is a deliberate choice, consistent with `remote-dev-vm`. The one thing
+that differs: this box keeps Claude Code credentials in `~/.claude` on the
+persistent volume, so desktop access also means access to that account and
+to everything under `/workspace`.
+
+To tighten it later, drop the `configuration-snippet` from `ingress.yaml`
+and move `VNC_PW` into a sealed secret — the desktop then shows its own
+login page.
 
 ## Optional secret
 
