@@ -15,6 +15,13 @@ spec:
       valuesObject:
         preUpgradeChecker:
           jobEnabled: false
+        persistence:
+          # The chart marks its `longhorn` StorageClass as default, which
+          # collided with local-path-provisioner's `defaultClass: true` --
+          # the cluster had two defaults, so a PVC omitting storageClassName
+          # got whichever Kubernetes picked (the newest, i.e. longhorn).
+          # local-path is the intended default; Longhorn stays opt-in.
+          defaultClass: false
   destination:
     server: https://kubernetes.default.svc
     namespace: longhorn-system

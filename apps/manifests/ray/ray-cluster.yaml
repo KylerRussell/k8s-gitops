@@ -11,7 +11,9 @@ spec:
   headGroupSpec:
     rayStartParams:
       dashboard-host: "0.0.0.0"
-      num-cpus: "8"
+      # Kept in step with the head container's CPU limit below. Ray otherwise
+      # advertises more CPUs to the scheduler than the container can use.
+      num-cpus: "2"
     template:
       spec:
         volumes:
@@ -27,13 +29,18 @@ spec:
                   secretKeyRef:
                     name: hf-token
                     key: HF_TOKEN
+            # Scaled down 2026-08-15: Ray is not currently in use, and its
+            # reservations were the only thing blocking a large workload on
+            # the GPU node. The head is left running so the dashboard and the
+            # cluster definition survive; raise these when Ray is needed again.
+            # Was: requests 4 CPU / 16Gi, limits 8 CPU / 32Gi.
             resources:
               limits:
-                cpu: "8"
-                memory: "32Gi"
+                cpu: "2"
+                memory: "4Gi"
               requests:
-                cpu: "4"
-                memory: "16Gi"
+                cpu: "500m"
+                memory: "2Gi"
             ports:
               - containerPort: 6379
                 name: gcs-server
@@ -45,8 +52,15 @@ spec:
               - mountPath: /workspace/shared
                 name: shared-data
   workerGroupSpecs:
-    - replicas: 3
-      minReplicas: 3
+    # Scaled to zero 2026-08-15: Ray is not currently in use. Two of the three
+    # replicas had in any case been Pending indefinitely -- a 128Gi request
+    # only ever fit on the control plane node, since the workers have ~62 GiB
+    # allocatable each.
+    #
+    # maxReplicas is left at 9 so the group can be scaled back up on demand.
+    # Was: replicas 3, minReplicas 3.
+    - replicas: 0
+      minReplicas: 0
       maxReplicas: 9
       groupName: compute-group
       rayStartParams: {}
@@ -72,13 +86,17 @@ spec:
                     secretKeyRef:
                       name: hf-token
                       key: HF_TOKEN
+              # Right-sized so that scaling this group back up does not
+              # immediately collide with the Kasm instance on the GPU node.
+              # A 128Gi request could only ever land on the control plane.
+              # Was: requests 32 CPU / 128Gi, limits 60 CPU / 240Gi.
               resources:
                 limits:
-                  cpu: "60"
-                  memory: "240Gi"
+                  cpu: "8"
+                  memory: "16Gi"
                 requests:
-                  cpu: "32"
-                  memory: "128Gi"
+                  cpu: "2"
+                  memory: "8Gi"
               volumeMounts:
                 - mountPath: /workspace/shared
                   name: shared-data
