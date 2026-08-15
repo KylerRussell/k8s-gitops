@@ -148,6 +148,14 @@ data:
           "icon": ""
         },
         {
+          "name": "Claude Code VM",
+          "url": "https://ccllm.homelab.com",
+          "shortcut": "CC",
+          "category": "ai-ml",
+          "checkStatus": false,
+          "icon": ""
+        },
+        {
           "name": "Mealie",
           "url": "http://mealie.homelab.com",
           "shortcut": "M",

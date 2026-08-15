@@ -2,9 +2,9 @@
 
 A Kasm desktop pinned to the GPU node, sized for large local model work.
 Same shape as `remote-dev-vm`, with both GPUs, a much larger memory
-reservation, a persistent 500Gi home directory, and no hardcoded credentials.
+reservation, and a persistent 500Gi home directory.
 
-Reachable at `https://claude-code.homelab.com` once ingress resolves.
+Reachable at `https://ccllm.homelab.com` once ingress resolves.
 
 Nothing is installed by the manifest. You install Claude Code once, by hand,
 and it stays.

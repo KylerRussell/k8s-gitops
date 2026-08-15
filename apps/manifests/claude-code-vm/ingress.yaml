@@ -24,10 +24,10 @@ spec:
   ingressClassName: nginx
   tls:
     - hosts:
-        - claude-code.homelab.com
+        - ccllm.homelab.com
       secretName: claude-code-vm-tls
   rules:
-    - host: claude-code.homelab.com
+    - host: ccllm.homelab.com
       http:
         paths:
           - path: /
