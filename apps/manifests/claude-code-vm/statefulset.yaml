@@ -153,11 +153,11 @@ spec:
             # is allowed to burst since CPU pressure only throttles.
             requests:
               cpu: "8"
-              memory: "576Gi"
+              memory: "620Gi"
               nvidia.com/gpu: "2"
             limits:
               cpu: "32"
-              memory: "576Gi"
+              memory: "620Gi"
               nvidia.com/gpu: "2"
       volumes:
         # Counts against the container's memory limit.
