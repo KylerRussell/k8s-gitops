@@ -24,6 +24,30 @@ spec:
       # talos/patches/controlplane-node-label.yaml.
       nodeSelector:
         nvidia.com/gpu.present: "true"
+      # Keeps kubelet from evicting this pod for DiskPressure.
+      #
+      # Kubelet's default imagefs.available<15% threshold puts the GPU node
+      # under DiskPressure with ~418 GiB still free on its ~2.79 TiB disk,
+      # and this pod was evicted. Kubelet never evicts -- and always admits
+      # -- a pod whose priority is >= 2,000,000,000, which only the built-in
+      # system-* classes can reach (user-defined classes cap at 1e9).
+      # system-cluster-critical is the lower of the two, so real node
+      # components (CNI, the device plugin) still outrank it.
+      #
+      # This is done here rather than by raising kubelet's thresholds so the
+      # Talos machine config stays untouched. Tradeoffs:
+      #   * Under DiskPressure kubelet evicts every OTHER pod on the node
+      #     first. It does not free space -- the disk still needs cleaning.
+      #   * If this pod ever cannot fit, the scheduler may preempt lower
+      #     priority pods on the node to make room.
+      priorityClassName: system-cluster-critical
+      # The node controller taints a node under DiskPressure with NoSchedule.
+      # Kubelet would admit the pod (it is critical) but the scheduler would
+      # never place it there without this.
+      tolerations:
+        - key: node.kubernetes.io/disk-pressure
+          operator: Exists
+          effect: NoSchedule
       initContainers:
         # Mounting a volume straight onto /home/kasm-user would shadow the
         # desktop profile the image ships (panel config, Desktop entries, VNC
