@@ -41,7 +41,6 @@ only occupied address in that block.
 |---|---|---|
 | `schematic.yaml` | all nodes | Image Factory schematic |
 | `patches/all-nodes-endpoint.yaml` | all nodes | strategic merge |
-| `patches/all-nodes-kubelet-eviction.yaml` | all nodes | strategic merge |
 | `patches/controlplane-vip.yaml` | control plane | strategic merge |
 | `patches/controlplane-certsans.yaml` | control plane | JSON patch |
 | `patches/controlplane-kernel-modules.yaml` | control plane | JSON patch |
@@ -151,48 +150,6 @@ Confirm the node label landed, since the device plugin selects on it:
 
 ```bash
 kubectl get node talos-7j9-1pq -o jsonpath='{.metadata.labels}' | tr ',' '\n' | grep nvidia
-```
-
-### Kubelet eviction thresholds (independent of the stages above)
-
-Replaces kubelet's percentage-based disk eviction thresholds with fixed
-sizes. On the control plane's ~2.79 TiB EPHEMERAL partition the default
-`imagefs.available<15%` starts evicting pods with ~418 GiB still free, which
-is what evicted `claude-code-vm-0`. No reboot — Talos restarts kubelet in
-place:
-
-```bash
-talosctl -e $CP -n $CP,$W1,$W2 patch mc --patch @talos/patches/all-nodes-kubelet-eviction.yaml
-```
-
-Confirm kubelet picked it up:
-
-```bash
-kubectl get --raw /api/v1/nodes/talos-7j9-1pq/proxy/configz | jq .kubeletconfig.evictionHard
-```
-
-Then wait for the `DiskPressure` condition to clear and recreate the evicted
-pod — an evicted StatefulSet pod sits in `Failed` until it is deleted:
-
-```bash
-kubectl get node talos-7j9-1pq -o jsonpath='{.spec.taints}{"\n"}'
-```
-
-```bash
-kubectl delete pod claude-code-vm-0 -n claude-code-vm
-```
-
-```bash
-kubectl get pods -n claude-code-vm -w
-```
-
-The thresholds stop premature eviction; they do not free any space. Check
-what is actually filling `/var` on the control plane — the 500Gi local-path
-home volume, Longhorn replicas and images all share it, and local-path does
-not enforce its PVC size:
-
-```bash
-talosctl -e $CP -n $CP usage /var --depth 2 --humanize
 ```
 
 ## Verifying
