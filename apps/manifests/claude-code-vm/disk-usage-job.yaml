@@ -1,0 +1,68 @@
+# Reports what is filling /var on the GPU node, without talosctl.
+#
+# On Talos, /var is the EPHEMERAL partition: container images, emptyDirs,
+# local-path volumes and Longhorn replicas all live there, and it is what
+# kubelet's DiskPressure threshold measures. This lists the largest
+# directories on it so you can see what to clean up.
+#
+# Runs as an Argo CD Sync hook, so it reruns on every sync of this app. The
+# previous run is deleted only when the next one starts, so its logs stay
+# readable in the Argo CD UI (open the Job's pod and select Logs) or with:
+#
+#   kubectl logs -n claude-code-vm job/node-disk-usage
+#
+# Read-only: /var is mounted readOnly and nothing is deleted.
+apiVersion: batch/v1
+kind: Job
+metadata:
+  name: node-disk-usage
+  annotations:
+    argocd.argoproj.io/hook: Sync
+    argocd.argoproj.io/hook-delete-policy: BeforeHookCreation
+spec:
+  backoffLimit: 0
+  activeDeadlineSeconds: 1800
+  template:
+    spec:
+      restartPolicy: Never
+      nodeSelector:
+        nvidia.com/gpu.present: "true"
+      # While the node is under DiskPressure, kubelet rejects every pod that
+      # is not critical, so this needs the same priority and toleration as the
+      # desktop pod. It is short-lived and only reads.
+      priorityClassName: system-cluster-critical
+      tolerations:
+        - key: node.kubernetes.io/disk-pressure
+          operator: Exists
+          effect: NoSchedule
+      containers:
+        - name: du
+          image: busybox:1.36.1
+          imagePullPolicy: IfNotPresent
+          securityContext:
+            runAsUser: 0
+          command: ["/bin/sh", "-c"]
+          # -x stays on the /var filesystem, so the overlay mounts of running
+          # containers are not counted twice. Sizes are in MiB.
+          args:
+            - |
+              echo "=== filesystem ==="
+              df -h /host/var
+              echo
+              echo "=== largest directories under /var (MiB, depth 3) ==="
+              du -xm -d 3 /host/var 2>/dev/null | sort -rn | head -40
+          volumeMounts:
+            - name: var
+              mountPath: /host/var
+              readOnly: true
+          resources:
+            requests:
+              cpu: 100m
+              memory: 64Mi
+            limits:
+              memory: 256Mi
+      volumes:
+        - name: var
+          hostPath:
+            path: /var
+            type: Directory

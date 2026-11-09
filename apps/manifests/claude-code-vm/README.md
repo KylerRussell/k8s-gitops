@@ -149,6 +149,30 @@ Storage is `local-path` on the node's 3.0 TB disk (~2.79 TiB allocatable).
 Note that local-path does not enforce the 500Gi figure — it provisions a
 directory, so the number is nominal rather than a hard quota.
 
+## Disk pressure
+
+The pod runs as `system-cluster-critical` and tolerates the
+`node.kubernetes.io/disk-pressure` taint. Kubelet's default
+`imagefs.available<15%` threshold fires with ~418 GiB still free on this
+node's disk and had evicted the pod; kubelet never evicts or rejects a pod at
+critical priority, so this keeps it running without changing the Talos
+kubelet config.
+
+That protects this pod only. While the node is under DiskPressure, kubelet
+keeps evicting everything else on it and the scheduler keeps new pods off it,
+so the disk still needs freeing.
+
+To see what is using the space without `talosctl`, this app includes
+`disk-usage-job.yaml`, an Argo CD Sync hook that runs `du` over the node's
+`/var` (read-only) on every sync. Read the report in the Argo CD UI on the
+`node-disk-usage` Job's pod, or:
+
+```bash
+kubectl logs -n claude-code-vm job/node-disk-usage
+```
+
+To rerun it, sync the `claude-code-vm` app again.
+
 ## Known rough edges
 
 - The container runs `privileged: true`, inherited from `remote-dev-vm`.
