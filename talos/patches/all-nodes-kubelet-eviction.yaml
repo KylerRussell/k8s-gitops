@@ -1,0 +1,42 @@
+# Strategic merge patch -- APPLY TO ALL THREE NODES.
+#
+# Fix 7: claude-code-vm-0 was evicted from talos-7j9-1pq for DiskPressure.
+#
+# Kubelet's default hard eviction thresholds are percentages:
+#
+#   nodefs.available<10%   imagefs.available<15%
+#
+# On Talos both signals measure the same filesystem -- the EPHEMERAL
+# partition mounted at /var, which also holds container images, emptyDirs,
+# local-path PVs (/var/local-path-provisioner) and Longhorn replicas
+# (/var/lib/longhorn). On the control plane that partition is ~2.79 TiB, so
+# 15% means kubelet starts evicting with ~418 GiB still free. Fixed sizes
+# scale sensibly to a disk this large.
+#
+# IMPORTANT: evictionHard is replaced wholesale, not merged with kubelet's
+# defaults. Any signal left out is set to ZERO, i.e. disabled. That is why
+# memory.available and both inodesFree signals are listed here at their
+# upstream default values even though only the two disk signals change.
+# Dropping memory.available would switch off memory-pressure eviction on the
+# node that runs etcd.
+#
+# This uses extraConfig (KubeletConfiguration fields) rather than extraArgs:
+# the --eviction-* flags are deprecated in favour of the config file, and
+# Talos already renders kubelet's settings into that file.
+#
+# minimum-reclaim makes kubelet free a margin beyond the threshold once it
+# starts reclaiming, so it does not flap in and out of DiskPressure.
+#
+# Kubelet changes apply without a reboot; Talos restarts kubelet in place.
+machine:
+  kubelet:
+    extraConfig:
+      evictionHard:
+        memory.available: "100Mi"
+        nodefs.available: "20Gi"
+        nodefs.inodesFree: "5%"
+        imagefs.available: "30Gi"
+        imagefs.inodesFree: "5%"
+      evictionMinimumReclaim:
+        nodefs.available: "5Gi"
+        imagefs.available: "10Gi"
