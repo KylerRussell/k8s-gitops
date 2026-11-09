@@ -149,6 +149,27 @@ Storage is `local-path` on the node's 3.0 TB disk (~2.79 TiB allocatable).
 Note that local-path does not enforce the 500Gi figure — it provisions a
 directory, so the number is nominal rather than a hard quota.
 
+## Disk pressure
+
+The pod runs as `system-cluster-critical` and tolerates the
+`node.kubernetes.io/disk-pressure` taint. Kubelet's default
+`imagefs.available<15%` threshold fires with ~418 GiB still free on this
+node's disk and had evicted the pod; kubelet never evicts or rejects a pod at
+critical priority, so this keeps it running without changing the Talos
+kubelet config.
+
+That protects this pod only. While the node is under DiskPressure, kubelet
+keeps evicting everything else on it and the scheduler keeps new pods off it,
+so the disk still needs freeing. Check:
+
+```bash
+kubectl describe node talos-7j9-1pq | grep -A1 DiskPressure
+```
+
+```bash
+talosctl -e 192.168.86.23 -n 192.168.86.23 usage /var --depth 2 --humanize
+```
+
 ## Known rough edges
 
 - The container runs `privileged: true`, inherited from `remote-dev-vm`.
