@@ -160,15 +160,18 @@ kubelet config.
 
 That protects this pod only. While the node is under DiskPressure, kubelet
 keeps evicting everything else on it and the scheduler keeps new pods off it,
-so the disk still needs freeing. Check:
+so the disk still needs freeing.
+
+To see what is using the space without `talosctl`, this app includes
+`disk-usage-job.yaml`, an Argo CD Sync hook that runs `du` over the node's
+`/var` (read-only) on every sync. Read the report in the Argo CD UI on the
+`node-disk-usage` Job's pod, or:
 
 ```bash
-kubectl describe node talos-7j9-1pq | grep -A1 DiskPressure
+kubectl logs -n claude-code-vm job/node-disk-usage
 ```
 
-```bash
-talosctl -e 192.168.86.23 -n 192.168.86.23 usage /var --depth 2 --humanize
-```
+To rerun it, sync the `claude-code-vm` app again.
 
 ## Known rough edges
 
