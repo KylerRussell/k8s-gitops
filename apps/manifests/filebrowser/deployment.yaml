@@ -7,6 +7,10 @@ metadata:
     app: filebrowser
 spec:
   replicas: 1
+  # The data volume is ReadWriteOnce. A rolling update would start the new
+  # pod before the old one releases the volume and hang on Multi-Attach.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: filebrowser
@@ -15,9 +19,109 @@ spec:
       labels:
         app: filebrowser
     spec:
+      securityContext:
+        runAsUser: 1000
+        runAsGroup: 1000
+        runAsNonRoot: true
+        # Longhorn volumes come up root-owned; this makes them writable by
+        # the image's uid 1000.
+        fsGroup: 1000
+        seccompProfile:
+          type: RuntimeDefault
+      initContainers:
+        # Makes the SealedSecret the source of truth for the admin login.
+        #
+        # Without this, FileBrowser's first-run "quick setup" creates admin
+        # with a random password printed once to the log, and any database
+        # reset means a new random password. Instead, on every start:
+        #   * no database yet  -> create it and an admin with the secret's
+        #                         password
+        #   * database exists  -> reset admin's password to the secret's
+        #
+        # A password changed in the web UI is therefore reverted on the next
+        # restart. To change it, update the SealedSecret.
+        - name: set-admin-password
+          image: filebrowser/filebrowser:v2.63.23
+          imagePullPolicy: IfNotPresent
+          command: ["sh", "-c"]
+          args:
+            - |
+              set -eu
+              DB=/database/filebrowser.db
+              if [ ! -f "$DB" ]; then
+                echo "no database -- initialising"
+                filebrowser -d "$DB" config init --root /srv
+              fi
+              if filebrowser -d "$DB" users update admin --password "$ADMIN_PASSWORD" --perm.admin; then
+                echo "admin password set from secret"
+              else
+                filebrowser -d "$DB" users add admin "$ADMIN_PASSWORD" --perm.admin
+                echo "admin created from secret"
+              fi
+          env:
+            # Not optional: if the secret is missing the pod waits rather
+            # than falling back to a random password.
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: filebrowser-admin
+                  key: password
+          securityContext:
+            allowPrivilegeEscalation: false
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            limits:
+              cpu: 500m
+              memory: 128Mi
+          volumeMounts:
+            - name: data
+              mountPath: /database
+              subPath: database
       containers:
         - name: filebrowser
-          image: filebrowser/filebrowser:latest
+          # Pinned: this was :latest. Note the upstream project was archived
+          # on 2026-09-01 and gets no further releases or security fixes.
+          image: filebrowser/filebrowser:v2.63.23
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 80
               name: http
+          securityContext:
+            allowPrivilegeEscalation: false
+            # Port 80 works without NET_BIND_SERVICE: containerd 2 lets pods
+            # bind low ports unprivileged.
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            httpGet:
+              path: /health
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /health
+              port: http
+            initialDelaySeconds: 15
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 50m
+              memory: 64Mi
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          # One volume, two subPaths: the user/settings database and the
+          # files FileBrowser serves. /config/settings.json ships in the
+          # image and already points at both paths.
+          volumeMounts:
+            - name: data
+              mountPath: /database
+              subPath: database
+            - name: data
+              mountPath: /srv
+              subPath: srv
+      volumes:
+        - name: data
+          persistentVolumeClaim:
+            claimName: filebrowser-data
