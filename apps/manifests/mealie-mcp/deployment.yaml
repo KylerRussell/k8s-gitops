@@ -1,0 +1,127 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: mealie-mcp
+  namespace: mealie-mcp
+  labels:
+    app: mealie-mcp
+spec:
+  replicas: 1
+  selector:
+    matchLabels:
+      app: mealie-mcp
+  template:
+    metadata:
+      labels:
+        app: mealie-mcp
+    spec:
+      securityContext:
+        runAsUser: 65534
+        runAsGroup: 65534
+        runAsNonRoot: true
+        seccompProfile:
+          type: RuntimeDefault
+      # The server is a single file (server.py, from the ConfigMap). Its
+      # dependencies are installed at start from exact pins in
+      # requirements.txt -- no custom image to build or host.
+      initContainers:
+        - name: install-deps
+          image: python:3.12.16-slim
+          imagePullPolicy: IfNotPresent
+          command: ["pip", "install", "--no-deps", "--no-cache-dir", "--disable-pip-version-check",
+                    "--target", "/deps", "-r", "/app/requirements.txt"]
+          env:
+            - name: HOME
+              value: /tmp
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: app
+              mountPath: /app
+            - name: deps
+              mountPath: /deps
+            - name: tmp
+              mountPath: /tmp
+      containers:
+        - name: mcp
+          image: python:3.12.16-slim
+          imagePullPolicy: IfNotPresent
+          command: ["python", "/app/server.py"]
+          ports:
+            - containerPort: 8000
+              name: http
+          env:
+            - name: PYTHONPATH
+              value: /deps
+            - name: PYTHONUNBUFFERED
+              value: "1"
+            - name: MEALIE_URL
+              value: http://mealie.mealie.svc.cluster.local
+            - name: MEALIE_PUBLIC_URL
+              value: https://mealie.homelab.com
+            # Host headers the server answers to (DNS-rebinding protection).
+            # Clients must use one of these names, not a bare IP.
+            - name: MCP_ALLOWED_HOSTS
+              value: >-
+                mealie-mcp.tail0ba1ed.ts.net:*,
+                mealie-mcp.mealie-mcp.svc.cluster.local:*,
+                mealie-mcp.mealie-mcp.svc:*,
+                mealie-mcp.mealie-mcp:*,
+                127.0.0.1:*
+            - name: MEALIE_API_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: mealie-mcp-mealie-token
+                  key: token
+            - name: MCP_TOKEN
+              valueFrom:
+                secretKeyRef:
+                  name: mealie-mcp-token
+                  key: token
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /healthz
+              port: http
+            initialDelaySeconds: 10
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 20m
+              memory: 64Mi
+            limits:
+              cpu: 500m
+              memory: 256Mi
+          volumeMounts:
+            - name: app
+              mountPath: /app
+              readOnly: true
+            - name: deps
+              mountPath: /deps
+              readOnly: true
+            - name: tmp
+              mountPath: /tmp
+      volumes:
+        - name: app
+          configMap:
+            name: mealie-mcp-app
+        - name: deps
+          emptyDir: {}
+        - name: tmp
+          emptyDir: {}
