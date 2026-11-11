@@ -77,7 +77,7 @@ data:
         },
         {
           "name": "Headlamp",
-          "url": "http://headlamp.homelab.com",
+          "url": "https://headlamp.homelab.com",
           "shortcut": "HL",
           "category": "kubernetes",
           "checkStatus": false,

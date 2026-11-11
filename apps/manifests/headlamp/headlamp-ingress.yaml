@@ -6,7 +6,16 @@ metadata:
   annotations:
     # nginx ingress annotations
     nginx.ingress.kubernetes.io/backend-protocol: "HTTP"
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+    # Google sign-in requires HTTPS. Headlamp builds its OIDC redirect_uri
+    # from the scheme the request arrived on, and Google rejects a plain
+    # http:// redirect_uri for anything but localhost (Error 400:
+    # redirect_uri_mismatch). Force every request onto HTTPS so Headlamp
+    # always sends https://headlamp.homelab.com/oidc-callback, the URI
+    # registered on the Google OAuth client.
+    #
+    # There is no tls: block, so ingress-nginx serves its default self-signed
+    # certificate -- the same as remote-dev-vm and claude-code-vm.
+    nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
     # Required for OIDC callback to work properly
     nginx.ingress.kubernetes.io/proxy-buffer-size: "64k"
     nginx.ingress.kubernetes.io/proxy-buffers-number: "4"
