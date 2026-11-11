@@ -7,6 +7,10 @@ metadata:
     app: mealie
 spec:
   replicas: 1
+  # The data volume is ReadWriteOnce; a rolling update would hang on
+  # Multi-Attach while the old pod still holds it.
+  strategy:
+    type: Recreate
   selector:
     matchLabels:
       app: mealie
@@ -15,9 +19,68 @@ spec:
       labels:
         app: mealie
     spec:
+      initContainers:
+        # Makes the mealie-admin SealedSecret the source of truth for the
+        # `admin` login.
+        #
+        # Mealie seeds `admin` with a hardcoded default password, which no
+        # setting can override. Instead, on every start this:
+        #   1. runs Mealie's own migrations -- on an empty volume that also
+        #      creates the default group, household and admin user
+        #   2. resets admin's password to the secret's value
+        #   3. clears any lockout (Mealie locks an account for 24h after 5
+        #      failed logins)
+        #
+        # A password changed in the web UI is therefore reverted on the next
+        # restart. To change it, update the SealedSecret.
+        - name: set-admin-password
+          image: ghcr.io/mealie-recipes/mealie:v3.28.0
+          imagePullPolicy: IfNotPresent
+          command: ["bash", "-c"]
+          args:
+            - |
+              set -eu
+              . /opt/mealie/bin/activate
+              cd /app
+              python -m mealie.db.init_db
+              python - <<'PY'
+              import os, sys
+              from mealie.core.security.security import hash_password
+              from mealie.db.db_setup import session_context
+              from mealie.repos.repository_factory import AllRepositories
+              from mealie.services.user_services.user_service import UserService
+
+              with session_context() as session:
+                  repos = AllRepositories(session, group_id=None, household_id=None)
+                  user = repos.users.get_one("admin", "username")
+                  if user is None:
+                      sys.exit("no 'admin' user in the database -- not touching anything")
+                  repos.users.update_password(user.id, hash_password(os.environ["ADMIN_PASSWORD"]))
+                  if user.locked_at or user.login_attemps:
+                      UserService(repos).unlock_user(user)
+                      print("admin was locked out -- unlocked")
+                  print("admin password set from secret")
+              PY
+          env:
+            # Not optional: without the secret the pod waits instead of
+            # coming up with Mealie's well-known default password.
+            - name: ADMIN_PASSWORD
+              valueFrom:
+                secretKeyRef:
+                  name: mealie-admin
+                  key: password
+          resources:
+            limits:
+              cpu: "1"
+              memory: 512Mi
+          volumeMounts:
+            - name: mealie-data
+              mountPath: /app/data
       containers:
         - name: mealie
-          image: ghcr.io/mealie-recipes/mealie:latest
+          # Pinned: this was :latest.
+          image: ghcr.io/mealie-recipes/mealie:v3.28.0
+          imagePullPolicy: IfNotPresent
           ports:
             - containerPort: 9000
               name: http
@@ -32,12 +95,32 @@ spec:
               value: "America/New_York"
             - name: BASE_URL
               value: "https://mealie.homelab.com"
+          readinessProbe:
+            httpGet:
+              path: /api/app/about
+              port: http
+            periodSeconds: 10
+          livenessProbe:
+            httpGet:
+              path: /api/app/about
+              port: http
+            # Mealie can take a while to load its NLP models on first start.
+            initialDelaySeconds: 60
+            periodSeconds: 30
+          resources:
+            requests:
+              cpu: 100m
+              memory: 256Mi
+            limits:
+              cpu: "2"
+              memory: 1Gi
           volumeMounts:
             - name: mealie-data
               mountPath: /app/data
       volumes:
         - name: mealie-data
-          emptyDir: {} # Using emptyDir for now as no PVC was explicitly requested/configured in plan details, but I should probably add one or use a claim. The plan said "Create PVCs (if needed)". I'll use emptyDir for simplicity unless I see a storage class pattern.
+          persistentVolumeClaim:
+            claimName: mealie-data
 ---
 apiVersion: v1
 kind: Service
