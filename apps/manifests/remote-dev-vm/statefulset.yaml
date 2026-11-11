@@ -24,11 +24,29 @@ spec:
             seccompProfile:
               type: Unconfined
           command: ["/bin/bash", "-c"]
+          # Grants kasm-user passwordless sudo, then starts the desktop.
+          #
+          # This used to begin with `apt-get update && apt-get install -y sudo`.
+          # The image ships ~10 third-party apt repos, and once HashiCorp's
+          # signing key stopped validating, `apt-get update` exited 100 and the
+          # pod crash-looped before the desktop ever started.
+          #
+          # sudo is already in kasmweb/ubuntu-jammy-desktop:1.16.0, so apt is
+          # only a fallback now. When it does run, it reads Ubuntu's own
+          # sources.list and skips the third-party repos. A failure there only
+          # costs sudo; it no longer keeps the desktop from starting.
           args:
             - |
-              apt-get update && apt-get install -y sudo && \
-              echo "kasm-user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/kasm-user && \
-              chmod 0440 /etc/sudoers.d/kasm-user && \
+              if ! command -v sudo >/dev/null; then
+                echo "sudo missing -- installing from Ubuntu's archive only"
+                apt-get update -o Dir::Etc::SourceParts=/dev/null \
+                  && apt-get install -y sudo \
+                  || echo "WARNING: could not install sudo; starting desktop without it"
+              fi
+              if command -v sudo >/dev/null; then
+                echo "kasm-user ALL=(ALL) NOPASSWD: ALL" > /etc/sudoers.d/kasm-user
+                chmod 0440 /etc/sudoers.d/kasm-user
+              fi
               exec runuser -u kasm-user -- /dockerstartup/vnc_startup.sh /dockerstartup/kasm_startup.sh --tail-log
           image: kasmweb/ubuntu-jammy-desktop:1.16.0
           imagePullPolicy: IfNotPresent
