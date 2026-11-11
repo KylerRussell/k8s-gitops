@@ -4,7 +4,16 @@ metadata:
   name: filebrowser
   namespace: filebrowser
   annotations:
-    nginx.ingress.kubernetes.io/proxy-body-size: "100m"
+    # Largest single request accepted. The web UI uploads in 10 MB chunks,
+    # so this mainly matters for API/WebDAV-style single-request uploads.
+    nginx.ingress.kubernetes.io/proxy-body-size: "10g"
+    # Stream uploads to FileBrowser as they arrive instead of having nginx
+    # spool the whole body to the ingress controller's own disk first.
+    nginx.ingress.kubernetes.io/proxy-request-buffering: "off"
+    # A multi-GB upload or download can outlast nginx's 60s defaults on a
+    # slow link. These are idle timeouts between reads/writes, in seconds.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "3600"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "3600"
 spec:
   ingressClassName: nginx
   rules:
