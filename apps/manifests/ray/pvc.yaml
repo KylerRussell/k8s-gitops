@@ -7,6 +7,10 @@ spec:
   accessModes:
     - ReadWriteMany
   storageClassName: longhorn-rwx
+  # Shrunk 2026-11-11 from 500Gi: model training on Ray is not in use. The old
+  # volume (only ~1 GB of cascade_output checkpoints) was deleted rather than
+  # migrated. Longhorn cannot shrink a volume in place, so changing this size
+  # means deleting the PVC and letting Argo CD recreate it.
   resources:
     requests:
-      storage: 500Gi
+      storage: 5Gi
