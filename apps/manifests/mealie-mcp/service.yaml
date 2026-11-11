@@ -1,0 +1,21 @@
+apiVersion: v1
+kind: Service
+metadata:
+  name: mealie-mcp
+  namespace: mealie-mcp
+  annotations:
+    # The Tailscale operator gives this service its own tailnet device, so
+    # Claude Code on any tailnet machine reaches it at
+    # http://mealie-mcp.tail0ba1ed.ts.net:8000/mcp -- encrypted by WireGuard
+    # and not reachable from the LAN or the internet. In-cluster clients
+    # (e.g. claude-code-vm) use
+    # http://mealie-mcp.mealie-mcp.svc.cluster.local:8000/mcp instead.
+    tailscale.com/expose: "true"
+    tailscale.com/hostname: mealie-mcp
+spec:
+  selector:
+    app: mealie-mcp
+  ports:
+    - name: http
+      port: 8000
+      targetPort: http
