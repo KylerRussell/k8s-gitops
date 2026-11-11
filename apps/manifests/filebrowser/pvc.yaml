@@ -1,0 +1,16 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: filebrowser-data
+  namespace: filebrowser
+spec:
+  accessModes:
+    - ReadWriteOnce
+  # Longhorn keeps 3 replicas, one per node, so the pod can move between
+  # nodes and the data survives losing one. Replicas are sparse: they only
+  # use disk for what's actually stored. The size can be raised in place
+  # (the storage class allows expansion); it can never be shrunk.
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 100Gi
