@@ -1,0 +1,15 @@
+apiVersion: v1
+kind: PersistentVolumeClaim
+metadata:
+  name: mealie-data
+  namespace: mealie
+spec:
+  accessModes:
+    - ReadWriteOnce
+  # Holds Mealie's SQLite database, recipe images, backups and its
+  # .secret/.session_secret keys. Longhorn keeps a replica on each node, so
+  # the pod can move between nodes. Expandable in place, never shrinkable.
+  storageClassName: longhorn
+  resources:
+    requests:
+      storage: 10Gi
