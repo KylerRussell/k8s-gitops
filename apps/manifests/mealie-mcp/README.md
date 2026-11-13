@@ -8,7 +8,9 @@ and add meal-plan entries. The whole server is [`server.py`](server.py).
 
 | Tool | What it does |
 |---|---|
-| `search_recipes` | Text search, optionally filtered by tag/category slugs |
+| `search_recipes` | Text search, optionally filtered by tag/category slugs or by ingredient foods (all or any) |
+| `list_foods` | The ingredient food names recipes are linked to |
+| `what_can_i_make` | Recipe suggestions for a list of foods on hand, optionally allowing a few missing |
 | `get_recipe` | Full recipe: ingredients, steps, times, servings, notes, nutrition |
 | `create_recipe_from_json` | Create from a schema.org `Recipe` object; Mealie parses it natively |
 | `create_recipe_from_url` | Mealie scrapes a recipe page |
