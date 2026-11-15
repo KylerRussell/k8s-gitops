@@ -1,0 +1,12 @@
+apiVersion: kustomize.config.k8s.io/v1beta1
+kind: Kustomization
+namespace: home-dns
+resources:
+  - deployment.yaml
+  - service.yaml
+  - pdb.yaml
+# The hash suffix rolls the pods whenever the Corefile changes.
+configMapGenerator:
+  - name: home-dns-corefile
+    files:
+      - Corefile
