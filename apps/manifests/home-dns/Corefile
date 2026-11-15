@@ -1,6 +1,7 @@
 # DNS for the home network (Google Wifi points its custom DNS here).
 # *.homelab.com and homelab.com -> the ingress on 192.168.86.240;
-# everything else is forwarded to public resolvers.
+# everything else is forwarded to Google Public DNS - the same upstream Google
+# Wifi uses in Automatic mode, and the router's secondary DNS.
 # Only LAN, pod and tailnet clients are answered (no open resolver).
 homelab.com:1053 {
     acl {
@@ -24,7 +25,7 @@ homelab.com:1053 {
     errors
     health :8080
     ready :8181
-    forward . 8.8.8.8 8.8.4.4 1.1.1.1 1.0.0.1
+    forward . 8.8.8.8 8.8.4.4
     cache 300
     loop
     reload
