@@ -85,8 +85,9 @@ spec:
             - containerPort: 9000
               name: http
           env:
+            # Off: recipes are public read-only; only existing accounts can edit.
             - name: ALLOW_SIGNUP
-              value: "true"
+              value: "false"
             - name: PUID
               value: "1000"
             - name: PGID

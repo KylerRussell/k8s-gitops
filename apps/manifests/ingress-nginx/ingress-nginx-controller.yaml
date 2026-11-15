@@ -5,6 +5,9 @@ metadata:
     meta.helm.sh/release-name: ingress-nginx
     meta.helm.sh/release-namespace: ingress-nginx
     metallb.io/ip-allocated-from-pool: homelab-pool
+    # home-dns shares this IP for port 53 (see apps/manifests/home-dns).
+    metallb.io/loadBalancerIPs: 192.168.86.240
+    metallb.io/allow-shared-ip: homelab-240
     tailscale.com/expose: 'true'
   finalizers:
   - tailscale.com/finalizer

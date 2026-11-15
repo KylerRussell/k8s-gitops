@@ -1,0 +1,31 @@
+# DNS for the home network (Google Wifi points its custom DNS here).
+# *.homelab.com and homelab.com -> the ingress on 192.168.86.240;
+# everything else is forwarded to public resolvers.
+# Only LAN, pod and tailnet clients are answered (no open resolver).
+homelab.com:1053 {
+    acl {
+        allow net 192.168.0.0/16 10.0.0.0/8 100.64.0.0/10 127.0.0.0/8
+        block
+    }
+    template IN A {
+        answer "{{ .Name }} 300 IN A 192.168.86.240"
+    }
+    template ANY ANY {
+        rcode NOERROR
+    }
+    errors
+}
+
+.:1053 {
+    acl {
+        allow net 192.168.0.0/16 10.0.0.0/8 100.64.0.0/10 127.0.0.0/8
+        block
+    }
+    errors
+    health :8080
+    ready :8181
+    forward . 8.8.8.8 8.8.4.4 1.1.1.1 1.0.0.1
+    cache 300
+    loop
+    reload
+}
