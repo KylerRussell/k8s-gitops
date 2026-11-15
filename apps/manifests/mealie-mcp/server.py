@@ -4,23 +4,32 @@ A small Model Context Protocol server that lets an agent search, read, create
 and edit recipes in Mealie, and read and add meal-plan entries.
 
 Deliberately limited: there are no delete tools, and nothing that touches
-webhooks, notifications, users or admin settings. Every request must carry
-`Authorization: Bearer <MCP_TOKEN>`.
+webhooks, notifications, users or admin settings.
+
+Every request must carry `Authorization: Bearer <token>`, where the token is
+either:
+  - MCP_TOKEN: the server's own token, which acts as the MEALIE_API_TOKEN user, or
+  - a person's own Mealie API token (Mealie: Profile -> API Tokens), which acts
+    as that person. It is checked against Mealie, so the server grants nothing
+    the token could not already do through Mealie's API.
 
 Configuration (environment):
   MEALIE_URL          Mealie API base, e.g. http://mealie.mealie.svc.cluster.local
-  MEALIE_PUBLIC_URL   Base for links returned to the agent, e.g. https://mealie.homelab.com
-  MEALIE_API_TOKEN    Mealie API token (Profile -> API Tokens)
-  MCP_TOKEN           Bearer token clients must send to this server
+  MEALIE_PUBLIC_URL   Base for links returned to the agent, e.g. http://mealie.homelab.com
+  MEALIE_API_TOKEN    Mealie API token used for MCP_TOKEN requests
+  MCP_TOKEN           The server's own bearer token
   MCP_ALLOWED_HOSTS   Comma-separated Host headers accepted, e.g. "mealie-mcp.example:*"
   PORT                Listen port (default 8000)
 """
 
 from __future__ import annotations
 
+import contextvars
+import hashlib
 import hmac
 import json
 import os
+import time
 from typing import Any, Literal
 
 import httpx
@@ -58,10 +67,20 @@ mcp = MCPServer(
 )
 
 
+# The Mealie token of the person making the current request, set by BearerAuth.
+# No default: a tool call that somehow runs without it fails rather than
+# falling back to the server's own (admin) token.
+_caller_token: contextvars.ContextVar[str] = contextvars.ContextVar("caller_mealie_token")
+
+
 def _client() -> httpx.AsyncClient:
+    try:
+        token = _caller_token.get()
+    except LookupError:
+        raise ToolError("No authenticated caller for this request.") from None
     return httpx.AsyncClient(
         base_url=MEALIE_URL,
-        headers={"Authorization": f"Bearer {MEALIE_API_TOKEN}", "Accept": "application/json"},
+        headers={"Authorization": f"Bearer {token}", "Accept": "application/json"},
         timeout=httpx.Timeout(120.0, connect=10.0),
     )
 
@@ -379,32 +398,68 @@ async def add_to_meal_plan(
 
 
 class BearerAuth:
-    """ASGI middleware: every HTTP request except /healthz needs the bearer token."""
+    """ASGI middleware: every HTTP request except /healthz needs a bearer token,
+    either the server's MCP_TOKEN or a Mealie API token that Mealie accepts.
+    Tool calls then run with the matching Mealie token."""
+
+    CACHE_SECONDS = 300
 
     def __init__(self, app: Any, token: str) -> None:
         self.app = app
         self.expected = f"Bearer {token}".encode()
+        self._valid: dict[str, float] = {}  # sha256 of a Mealie token -> expiry
+
+    async def _mealie_accepts(self, token: str) -> bool:
+        key = hashlib.sha256(token.encode()).hexdigest()
+        now = time.monotonic()
+        if self._valid.get(key, 0.0) > now:
+            return True
+        async with httpx.AsyncClient(base_url=MEALIE_URL, timeout=httpx.Timeout(10.0)) as client:
+            resp = await client.get("/api/users/self", headers={"Authorization": f"Bearer {token}"})
+        if resp.status_code != 200:
+            return False
+        self._valid = {k: v for k, v in self._valid.items() if v > now}
+        self._valid[key] = now + self.CACHE_SECONDS
+        return True
+
+    @staticmethod
+    async def _reply(send: Any, status: int, body: bytes, headers: list | None = None) -> None:
+        await send(
+            {
+                "type": "http.response.start",
+                "status": status,
+                "headers": [(b"content-type", b"text/plain"), *(headers or [])],
+            }
+        )
+        await send({"type": "http.response.body", "body": body})
 
     async def __call__(self, scope: dict, receive: Any, send: Any) -> None:
         if scope["type"] != "http":
             await self.app(scope, receive, send)  # lifespan events pass through
             return
         if scope.get("path") == "/healthz":
-            await send({"type": "http.response.start", "status": 200, "headers": [(b"content-type", b"text/plain")]})
-            await send({"type": "http.response.body", "body": b"ok"})
+            await self._reply(send, 200, b"ok")
             return
         supplied = dict(scope.get("headers") or []).get(b"authorization", b"")
-        if not hmac.compare_digest(supplied, self.expected):
-            await send(
-                {
-                    "type": "http.response.start",
-                    "status": 401,
-                    "headers": [(b"content-type", b"text/plain"), (b"www-authenticate", b"Bearer")],
-                }
-            )
-            await send({"type": "http.response.body", "body": b"unauthorized"})
+        mealie_token: str | None = None
+        if hmac.compare_digest(supplied, self.expected):
+            mealie_token = MEALIE_API_TOKEN
+        elif supplied.startswith(b"Bearer ") and 20 <= len(supplied) <= 4096:
+            candidate = supplied[7:].decode("ascii", "replace").strip()
+            try:
+                if await self._mealie_accepts(candidate):
+                    mealie_token = candidate
+            except httpx.HTTPError:
+                await self._reply(send, 502, b"could not reach Mealie to check the token")
+                return
+        if mealie_token is None:
+            await self._reply(send, 401, b"unauthorized", [(b"www-authenticate", b"Bearer")])
             return
-        await self.app(scope, receive, send)
+        reset = _caller_token.set(mealie_token)
+        try:
+            await self.app(scope, receive, send)
+        finally:
+            _caller_token.reset(reset)
 
 
 def build_app() -> Any:

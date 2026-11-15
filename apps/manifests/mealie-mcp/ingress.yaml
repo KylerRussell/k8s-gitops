@@ -1,0 +1,26 @@
+apiVersion: networking.k8s.io/v1
+kind: Ingress
+metadata:
+  name: mealie-mcp
+  namespace: mealie-mcp
+  annotations:
+    # Recipe imports from a URL can take a while; nginx's default 60s would
+    # cut them off.
+    nginx.ingress.kubernetes.io/proxy-read-timeout: "180"
+    nginx.ingress.kubernetes.io/proxy-send-timeout: "180"
+spec:
+  # Home network (via home-dns -> 192.168.86.240) and tailnet (split DNS for
+  # homelab.com) clients reach the server at http://mealie-mcp.homelab.com/mcp.
+  # Plain HTTP: the ingress only has a self-signed certificate.
+  ingressClassName: nginx
+  rules:
+    - host: mealie-mcp.homelab.com
+      http:
+        paths:
+          - path: /mcp
+            pathType: Prefix
+            backend:
+              service:
+                name: mealie-mcp
+                port:
+                  number: 8000

@@ -1,6 +1,6 @@
 # mealie-mcp
 
-A small [MCP](https://modelcontextprotocol.io) server that lets Claude Code
+A small [MCP](https://modelcontextprotocol.io) server that lets Claude Code, Claude Desktop
 (or any MCP client) search, read, create and edit recipes in Mealie, and read
 and add meal-plan entries. The whole server is [`server.py`](server.py).
 
@@ -23,21 +23,54 @@ notifications, users or admin settings.
 
 ## Connecting a client
 
-The server requires `Authorization: Bearer <token>` on every request. The
-token lives in the `mealie-mcp-token` SealedSecret; a copy is kept at
-`~/.config/mealie-mcp/token` on the machine that created it.
+The server requires `Authorization: Bearer <token>` on every request, with
+either of two kinds of token:
 
-From any tailnet machine (the Service is exposed by the Tailscale operator,
-so traffic is WireGuard-encrypted and not reachable from the LAN):
+- **Your own Mealie API token** (Mealie: Profile -> API Tokens). The server
+  checks it with Mealie and acts as you, so recipes you create or edit are
+  yours, and it can do nothing your account can't. This is how other people
+  in the household connect.
+- **The server's token**, in the `mealie-mcp-token` SealedSecret (a copy is
+  kept at `~/.config/mealie-mcp/token` on the machine that created it). It
+  acts as the `mealie-mcp-mealie-token` user (the admin).
+
+| From | URL |
+|---|---|
+| The home network, or the tailnet | `http://mealie-mcp.homelab.com/mcp` |
+| Any tailnet machine, directly | `http://mealie-mcp.tail0ba1ed.ts.net:8000/mcp` |
+| Inside the cluster (e.g. claude-code-vm) | `http://mealie-mcp.mealie-mcp.svc.cluster.local:8000/mcp` |
+
+The home-network URL is plain HTTP (the ingress has only a self-signed
+certificate), so the token crosses the Wi-Fi unencrypted. The tailnet URL is
+encrypted by WireGuard. The server only answers to the hostnames in
+`MCP_ALLOWED_HOSTS` (deployment.yaml), so connect by name, not IP.
+
+Claude Code:
 
 ```bash
 claude mcp add --transport http --scope user mealie http://mealie-mcp.tail0ba1ed.ts.net:8000/mcp --header "Authorization: Bearer $(cat ~/.config/mealie-mcp/token)"
 ```
 
-From inside the cluster (e.g. claude-code-vm), use
-`http://mealie-mcp.mealie-mcp.svc.cluster.local:8000/mcp` instead. The server
-only answers to the hostnames in `MCP_ALLOWED_HOSTS` (deployment.yaml), so
-connect by name, not IP.
+Claude Desktop (needs Node.js). Add this to `claude_desktop_config.json`
+(Settings -> Developer -> Edit Config), then restart Claude:
+
+```json
+{
+  "mcpServers": {
+    "mealie": {
+      "command": "npx",
+      "args": ["-y", "mcp-remote@0.15.2", "http://mealie-mcp.homelab.com/mcp",
+               "--allow-http", "--transport", "http-only",
+               "--header", "Authorization:${AUTH_HEADER}"],
+      "env": { "AUTH_HEADER": "Bearer <your Mealie API token>" }
+    }
+  }
+}
+```
+
+The Claude apps' own **Connectors** setting (claude.ai, mobile, Desktop) does
+not work with this server: those connections come from Anthropic's servers,
+which can't reach the home network.
 
 ## Secrets
 
