@@ -65,16 +65,20 @@ spec:
             - name: MEALIE_URL
               value: http://mealie.mealie.svc.cluster.local
             - name: MEALIE_PUBLIC_URL
-              value: https://mealie.homelab.com
+              value: http://mealie.homelab.com
             # Host headers the server answers to (DNS-rebinding protection).
-            # Clients must use one of these names, not a bare IP.
+            # Clients must use one of these names, not a bare IP. The bare
+            # mealie-mcp.homelab.com is the ingress (no port in the header).
             - name: MCP_ALLOWED_HOSTS
               value: >-
+                mealie-mcp.homelab.com,
                 mealie-mcp.tail0ba1ed.ts.net:*,
                 mealie-mcp.mealie-mcp.svc.cluster.local:*,
                 mealie-mcp.mealie-mcp.svc:*,
                 mealie-mcp.mealie-mcp:*,
                 127.0.0.1:*
+            # Used for requests that send MCP_TOKEN. People can instead send
+            # their own Mealie API token and act as themselves.
             - name: MEALIE_API_TOKEN
               valueFrom:
                 secretKeyRef:
